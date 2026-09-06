@@ -63,7 +63,7 @@ function AdminInvitesPage() {
   return (
     <div className="page">
       <main className="card-list">
-        <Link to="/" className="back-link">
+        <Link to="/admin" className="back-link">
           ← Zurück
         </Link>
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import './AssignableList.css';
 
-const emptyForm = { location: '', startDate: '', endDate: '', notes: '' };
+const emptyForm = { location: '', startDate: '', endDate: '', spots: '', notes: '' };
 
 function formatDate(value) {
   if (!value) return null;
@@ -49,7 +49,7 @@ function AccommodationsPage() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, spots: Number(form.spots) }),
       });
       if (!res.ok) {
         setError('Unterkunft konnte nicht gespeichert werden.');
@@ -129,6 +129,14 @@ function AccommodationsPage() {
                 />
               </label>
             </div>
+            <input
+              type="number"
+              min="1"
+              placeholder="Anzahl Plätze"
+              value={form.spots}
+              onChange={(e) => setForm({ ...form, spots: e.target.value })}
+              required
+            />
             <textarea
               placeholder="Zusatzinformationen"
               value={form.notes}
@@ -157,6 +165,11 @@ function AccommodationsPage() {
                       {formatDate(a.startDate)} – {formatDate(a.endDate)}
                     </span>
                   </div>
+                  {a.spots != null && (
+                    <p className={`assignable-meta assignable-spots${a.freeSpots < 0 ? ' assignable-spots--over' : ''}`}>
+                      {a.spots} {a.spots === 1 ? 'Platz' : 'Plätze'} · {a.freeSpots} frei
+                    </p>
+                  )}
                   {a.notes && <p className="assignable-notes">{a.notes}</p>}
                   <p className="assignable-owner">Eingetragen von {a.createdByName}</p>
 

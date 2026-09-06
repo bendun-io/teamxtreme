@@ -1,6 +1,7 @@
-// Invite management is the only admin-only surface today; make sure a
-// regular authenticated user can't reach it no matter how the request is
-// shaped.
+// Per docs/Spec.md's "For all admin features, ensure that there is a test
+// that only admins can use them" — invites, general settings, and clear-data
+// are all admin-only surfaces; make sure a regular authenticated user can't
+// reach any of them no matter how the request is shaped.
 import { test, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startServer, stopServer, resetDb, closeDb } from '../helpers/server.js';
@@ -54,4 +55,35 @@ test('an admin can create and list invites', async () => {
   const listRes = await client.get('/api/auth/invites');
   assert.equal(listRes.status, 200);
   assert.equal(listRes.body.invites.length, 1);
+});
+
+test('a non-admin cannot change general settings', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'nonadmin-settings@test.local',
+    password: 'pw123456',
+    name: 'Non Admin Settings',
+  });
+  const res = await client.patch('/api/admin/settings', { whatsappLink: 'https://chat.whatsapp.com/x' });
+  assert.equal(res.status, 403);
+});
+
+test('an admin can change general settings', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'admin-settings@test.local',
+    password: 'pw123456',
+    name: 'Admin Settings',
+    isAdmin: true,
+  });
+  const res = await client.patch('/api/admin/settings', { whatsappLink: 'https://chat.whatsapp.com/x' });
+  assert.equal(res.status, 200);
+});
+
+test('a non-admin cannot clear all data', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'nonadmin-cleardata@test.local',
+    password: 'pw123456',
+    name: 'Non Admin Clear',
+  });
+  const res = await client.post('/api/admin/clear-data', { confirm: 'LÖSCHEN' });
+  assert.equal(res.status, 403);
 });

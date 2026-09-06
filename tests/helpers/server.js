@@ -38,7 +38,8 @@ export async function resetDb() {
       flights,
       media,
       invites,
-      users
+      users,
+      settings
     RESTART IDENTITY CASCADE
   `);
 }

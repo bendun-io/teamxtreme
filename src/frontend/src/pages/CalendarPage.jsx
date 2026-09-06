@@ -83,6 +83,30 @@ function stayForDay(stays, dayKey) {
   return stays.find((s) => dayKey >= s.startDate && dayKey <= s.endDate) || null;
 }
 
+// A single paper-plane glyph, rotated 180° for "landing" — reads as the
+// same plane travelling the opposite direction, rather than two unrelated
+// shapes, so arrival/departure stay visually paired at a glance.
+function PlaneIcon({ variant, className }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={12}
+      height={12}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={variant === 'landing' ? { transform: 'rotate(180deg)' } : undefined}
+      aria-hidden="true"
+    >
+      <path d="M22 2 11 13" />
+      <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+    </svg>
+  );
+}
+
 function CalendarPage() {
   const [flights, setFlights] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
@@ -168,12 +192,21 @@ function CalendarPage() {
                         const present = day >= row.startKey && (!row.endKey || day <= row.endKey);
                         if (!present) return <td key={day} className="calendar-cell calendar-cell--absent" />;
                         const stay = stayForDay(row.stays, day);
+                        const isArrival = day === row.startKey;
+                        const isDeparture = row.endKey != null && day === row.endKey;
                         const className = stay
                           ? `calendar-cell calendar-cell--stay-${stay.status}`
                           : 'calendar-cell calendar-cell--present';
+                        const title = [isArrival && 'Ankunft', isDeparture && 'Abreise', stay?.location]
+                          .filter(Boolean)
+                          .join(' · ') || undefined;
                         return (
-                          <td key={day} className={className} title={stay ? stay.location : undefined}>
-                            {stay ? stay.location : '✓'}
+                          <td key={day} className={className} title={title}>
+                            <span className="calendar-cell-content">
+                              {isArrival && <PlaneIcon variant="landing" className="calendar-flight-icon" />}
+                              {isDeparture && <PlaneIcon variant="departure" className="calendar-flight-icon" />}
+                              {stay ? stay.location : '✓'}
+                            </span>
                           </td>
                         );
                       })}
@@ -187,6 +220,12 @@ function CalendarPage() {
             <span className="calendar-legend-item calendar-cell--present">Vor Ort</span>
             <span className="calendar-legend-item calendar-cell--stay-accepted">Unterkunft (bestätigt)</span>
             <span className="calendar-legend-item calendar-cell--stay-pending">Unterkunft (offen)</span>
+            <span className="calendar-legend-item calendar-legend-item--icon">
+              <PlaneIcon variant="landing" className="calendar-flight-icon" /> Ankunft
+            </span>
+            <span className="calendar-legend-item calendar-legend-item--icon">
+              <PlaneIcon variant="departure" className="calendar-flight-icon" /> Abreise
+            </span>
           </p>
         </section>
       </main>

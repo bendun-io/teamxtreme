@@ -3,7 +3,9 @@ import { RequireAuth, RequireAdmin } from './auth/RequireAuth.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import InvitePage from './pages/InvitePage.jsx';
 import HomePage from './pages/HomePage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 import AdminInvitesPage from './pages/AdminInvitesPage.jsx';
+import AdminSettingsPage from './pages/AdminSettingsPage.jsx';
 import FlightsPage from './pages/FlightsPage.jsx';
 import AccommodationsPage from './pages/AccommodationsPage.jsx';
 import VehiclesPage from './pages/VehiclesPage.jsx';
@@ -28,7 +30,9 @@ function App() {
       </Route>
 
       <Route element={<RequireAdmin />}>
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/invites" element={<AdminInvitesPage />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
       </Route>
     </Routes>
   );

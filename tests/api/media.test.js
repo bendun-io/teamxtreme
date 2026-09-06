@@ -212,6 +212,28 @@ test('POST /api/media does not generate a thumbnail for a video', async () => {
   assert.equal(res.body.media.thumbnailUrl, null);
 });
 
+test('GET /api/media/count reflects the number of shared files', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media13@test.local',
+    password: 'pw123456',
+    name: 'Counter',
+  });
+
+  const zeroRes = await client.get('/api/media/count');
+  assert.equal(zeroRes.status, 200);
+  assert.equal(zeroRes.body.count, 0);
+
+  const form1 = new FormData();
+  form1.set('file', new Blob([pngBytes], { type: 'image/png' }), 'first.png');
+  await client.post('/api/media', undefined, { formData: form1 });
+  const form2 = new FormData();
+  form2.set('file', new Blob([pngBytes], { type: 'image/png' }), 'second.png');
+  await client.post('/api/media', undefined, { formData: form2 });
+
+  const res = await client.get('/api/media/count');
+  assert.equal(res.body.count, 2);
+});
+
 test('GET /api/media/download-all zips every shared file together', async () => {
   const { client } = await loginAsNewUser(baseUrl, {
     email: 'media11@test.local',

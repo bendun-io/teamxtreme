@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
+import { useMediaCount } from '../media/MediaCountContext.jsx';
 import './BottomNav.css';
 
 const iconProps = {
@@ -47,6 +48,13 @@ const icons = {
       <circle cx="16.5" cy="16.5" r="1.5" />
     </svg>
   ),
+  gallery: (
+    <svg {...iconProps}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="9" cy="9" r="2" />
+      <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
+    </svg>
+  ),
   profile: (
     <svg {...iconProps}>
       <circle cx="12" cy="8" r="4" />
@@ -67,11 +75,13 @@ const items = [
   { to: '/flights', label: 'Reise', icon: 'flight' },
   { to: '/accommodations', label: 'Unterkunft', icon: 'bed' },
   { to: '/vehicles', label: 'Fahrzeuge', icon: 'car' },
+  { to: '/media', label: 'Bilder', icon: 'gallery', badge: 'media' },
   { to: '/settings', label: 'Profil', icon: 'profile' },
 ];
 
 function BottomNav() {
   const { user } = useAuth();
+  const { count: mediaCount } = useMediaCount();
 
   return (
     <nav className="bottom-nav">
@@ -80,16 +90,19 @@ function BottomNav() {
           key={item.to}
           to={item.to}
           end={item.end}
-          aria-label={item.label}
+          aria-label={item.badge ? `${item.label} (${mediaCount})` : item.label}
           title={item.label}
           className={({ isActive }) => `bottom-nav-item${isActive ? ' bottom-nav-item--active' : ''}`}
         >
-          {icons[item.icon]}
+          <span className="bottom-nav-icon-wrap">
+            {icons[item.icon]}
+            {item.badge === 'media' && <span className="bottom-nav-badge">{mediaCount}</span>}
+          </span>
         </NavLink>
       ))}
       {user?.isAdmin && (
         <NavLink
-          to="/admin/invites"
+          to="/admin"
           aria-label="Admin"
           title="Admin"
           className={({ isActive }) => `bottom-nav-item${isActive ? ' bottom-nav-item--active' : ''}`}

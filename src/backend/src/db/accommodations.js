@@ -2,7 +2,7 @@ import { pool } from './pool.js';
 
 const SELECT_WITH_ASSIGNMENTS = `
   SELECT a.id, a.created_by, u.name AS created_by_name, a.location, a.start_date,
-         a.end_date, a.notes, a.created_at,
+         a.end_date, a.notes, a.spots, a.created_at,
          COALESCE(
            json_agg(json_build_object(
              'id', aa.id,
@@ -33,12 +33,12 @@ export async function findAccommodationById(id) {
   return rows[0] || null;
 }
 
-export async function createAccommodation(userId, { location, startDate, endDate, notes }) {
+export async function createAccommodation(userId, { location, startDate, endDate, notes, spots }) {
   const { rows } = await pool.query(
-    `INSERT INTO accommodations (created_by, location, start_date, end_date, notes)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO accommodations (created_by, location, start_date, end_date, notes, spots)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
-    [userId, location, startDate, endDate, notes || null]
+    [userId, location, startDate, endDate, notes || null, spots]
   );
   return findAccommodationById(rows[0].id);
 }

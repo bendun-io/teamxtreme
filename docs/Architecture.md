@@ -47,6 +47,8 @@ src/
       003_create_media.sql                             # media table for shared photos/videos
       004_add_user_contact_fields.sql                  # users.phone, users.instagram_handle
       005_add_media_thumbnail.sql                      # media.thumbnail_name
+      006_create_settings.sql                           # key/value settings table (whatsapp_link)
+      007_add_accommodation_spots.sql                    # accommodations.spots (nullable)
     src/
       app.js                # builds and exports the Express app (routes, static hosting, SPA
                              # fallback) without calling .listen() — imported directly by index.js
@@ -64,6 +66,7 @@ src/
         accommodations.js    # accommodation + accommodation_assignment queries
         vehicles.js          # vehicle + vehicle_assignment queries
         media.js              # media queries (shared photos/videos)
+        settings.js            # key/value app settings (currently just whatsappLink)
       utils/
         jwt.js               # session cookie + OAuth "state" JWT helpers
         loginRateLimit.js     # per-IP failed-login counter + 10-minute block
@@ -93,6 +96,9 @@ src/
         vehicles.js          # vehicles add + assign/accept, mounted behind requireAuth
         media.js              # media upload (scanUpload.js + thumbnail.js) + gallery listing +
                                # download-all zip (archiver), mounted behind requireAuth
+        settings.js            # GET /api/settings — read-only, any authenticated user
+        admin.js                # PATCH /api/admin/settings + POST /api/admin/clear-data,
+                                 # mounted behind requireAuth + requireAdmin — see "Admin Menu" below
   frontend/               # React PWA (Vite)
     package.json
     vite.config.js         # includes vite-plugin-pwa (manifest + service worker); dev proxy for
@@ -110,18 +116,28 @@ src/
       auth/
         AuthContext.jsx      # fetches /api/auth/me, exposes {user, loading, refresh, logout}
         RequireAuth.jsx      # route guards (RequireAuth, RequireAdmin); also renders BottomNav
-        BottomNav.jsx         # fixed bottom nav, icon-only (Home/Kalender/Reise/Unterkunft/Fahrzeuge/Profil/[Admin])
+        BottomNav.jsx         # fixed bottom nav, icon-only (Home/Kalender/Reise/Unterkunft/
+                               # Fahrzeuge/Bilder[+count badge]/Profil/[Admin])
         auth.css
       components/            # small UI pieces shared across pages
         Modal.jsx             # generic centered/bottom-sheet overlay (backdrop click + Escape to
                                # close); used by CalendarPage's contact overlay, reusable elsewhere
         ContactLinks.jsx       # renders a user's mailto/tel/wa.me/instagram links from
                                 # {email, phone, instagramHandle}, skipping any that are unset
+      media/
+        MediaCountContext.jsx  # shared { count, refresh() } for the bottom nav's Bilder badge —
+                                # a context (not a plain fetch in BottomNav.jsx) because
+                                # MediaPage.jsx needs to trigger a refresh right after an upload
       pages/
         LoginPage.jsx
         InvitePage.jsx        # invite-acceptance: password signup or Google/Instagram
+        AdminPage.jsx          # admin menu index (/admin): cards linking to Invites and
+                                # Settings, plus the inline "clear data" danger button — see
+                                # "Admin Menu" below
         AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links,
                                 # or send them via a mailto: link
+        AdminSettingsPage.jsx  # admin-only: edit general settings (currently just the
+                                 # WhatsApp link)
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list);
                                 # also the app-wide "share" button (Web Share API, clipboard
                                 # fallback) overlaid on the header image, and the "Offene
@@ -132,7 +148,8 @@ src/
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
         SettingsPage.jsx       # edit own name + profile picture ("Profil" in the bottom nav), logout
         CalendarPage.jsx       # read-only presence/accommodation table, derived from flights + accommodations;
-                                # clicking a row's name opens a Modal with that user's ContactLinks
+                                # clicking a row's name opens a Modal with that user's ContactLinks; a
+                                # landing/departure plane icon marks each row's arrival/departure day
         MediaPage.jsx           # upload + thumbnail-grid gallery of shared photos/videos, a
                                 # "download all" zip button, and a full-resolution Modal (with
                                 # its own download link) opened by clicking a grid item
@@ -185,6 +202,67 @@ src/
   ID is already linked to a user — it does not auto-link by matching email,
   so a provider can't be added to an existing account after the fact without
   going through a new invite.
+
+## Admin Menu
+
+Per docs/Spec.md's "Admin Menu" section, `/admin` (`AdminPage.jsx`) is a
+card-list index — the bottom nav's "Admin" item now points here instead of
+straight to invites — linking to:
+
+- **Einladungen** (`/admin/invites`, `AdminInvitesPage.jsx`) — unchanged,
+  just moved one level deeper; its back-link now goes to `/admin` instead of
+  `/`.
+- **Allgemeine Einstellungen** (`/admin/settings`, `AdminSettingsPage.jsx`)
+  — currently just the WhatsApp group link (`GET /api/settings` to prefill,
+  `PATCH /api/admin/settings` to save), stored as a row in a small
+  key/value `settings` table (`db/settings.js`, migration
+  `006_create_settings.sql`) rather than a dedicated column, since the spec
+  explicitly expects this to grow ("might extend in the future") — adding a
+  setting later is a data change, not a migration. `HomePage.jsx`'s
+  "Hilfreiche Links" WhatsApp button now reads this value via
+  `GET /api/settings` (any authenticated user) instead of a hardcoded
+  placeholder string.
+- **Daten löschen** — an inline danger button on `AdminPage.jsx` itself
+  (no sub-route), for resetting the app before a new season.
+
+### Clear data
+
+`POST /api/admin/clear-data` (`routes/admin.js`) deletes, in one DB
+transaction: every `media` row, every `invites` row (deleted first — they
+reference `users(id)` with no `ON DELETE CASCADE`, so they'd otherwise block
+deleting the users below), every `accommodations`/`vehicles`/`flights` row
+(their `*_assignments` rows cascade automatically), and every **non-admin**
+user. The underlying files (originals + thumbnails in `uploadsDir`, and any
+locally-uploaded profile pictures belonging to a deleted user) are then
+unlinked from disk — best-effort, after the DB transaction commits, since a
+leftover file at that point is untidy, not a functional or security issue.
+
+**Admin accounts are kept** (a scope decision made explicitly, not implied
+by the spec's literal "delete all uploaded files and users" wording): the
+server only re-creates an admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD` at
+*startup* on an empty `users` table (see [Auth](#auth)), and
+[ExternalSetup.md](ExternalSetup.md) even suggests removing
+`ADMIN_PASSWORD` from `.env` after initial setup — wiping every admin too
+would risk the app becoming completely inaccessible until someone
+redeploys/restarts the container with those env vars set again. Keeping
+admins means the app stays immediately usable after a reset to re-invite
+people for the next season.
+
+The button requires typing the exact confirmation phrase `LÖSCHEN` (German
+for "delete", matching the app's German-only UI) into a text input before
+it's enabled — a deliberate step up from a plain OK/Cancel `confirm()`
+dialog, since this is destructive and hard to reverse. The backend
+independently re-checks `req.body.confirm === 'LÖSCHEN'` (`400` otherwise,
+nothing deleted) so the confirmation can't be bypassed by replaying or
+scripting the request directly.
+
+Per the spec's "For all admin features, ensure that there is a test that
+only admins can use them" requirement, `tests/security/admin-only.test.js`
+covers both new routes (non-admin → `403`, admin → success) alongside the
+existing invites coverage, and `tests/api/admin.test.js` exercises
+`clear-data` end-to-end (seeds a full trip's worth of data, asserts a wrong
+`confirm` deletes nothing, then asserts a correct one wipes everything
+except the admin — who can still `GET /api/auth/me` afterwards).
 
 ## Login brute-force protection
 
@@ -387,6 +465,79 @@ answers the spec's "download all" button by streaming a zip of every
 original file via `archiver`, piped straight from disk to the response —
 memory usage stays flat regardless of how much media has accumulated, since
 nothing is buffered or written to a temporary zip on disk first.
+
+## Media count badge
+
+Per docs/Spec.md's "Bottom Navigation" section ("'Pictures' should show the
+gallery view ... it should also have a number attached to the icon with the
+total number of pictures shared"), the bottom nav's "Bilder" item
+(`auth/BottomNav.jsx`) shows a small badge with the live count.
+
+`GET /api/media/count` (`routes/media.js` / `db/media.js`'s `countMedia()`)
+returns just `{ count }` via `SELECT COUNT(*)` — deliberately not reusing
+`GET /api/media`'s full listing, since the badge is fetched on every
+authenticated page (via `media/MediaCountContext.jsx`, a small context
+provided by `RequireAuth`/`RequireAdmin` alongside `BottomNav`) and pulling
+every row's metadata just to display a number would be wasteful.
+
+A context (rather than a plain `fetch` inside `BottomNav.jsx`) exists
+because `BottomNav` stays mounted across route changes within its
+`RequireAuth`/`RequireAdmin` branch (see [Frontend](#frontend)'s route
+table), so a fetch-on-mount alone wouldn't reflect an upload made on
+`MediaPage.jsx` without a hard reload — `MediaPage.jsx` calls the context's
+`refresh()` right after a successful upload instead. `RequireAuth` and
+`RequireAdmin` each provide their own `MediaCountProvider` instance (they're
+separate route branches, see `App.jsx`), so the badge briefly refetches from
+0 when crossing between a regular page and an admin page — acceptable since
+it resolves in one round trip and admin pages don't otherwise show media.
+
+## Accommodation capacity
+
+Per docs/Spec.md's "Core information sharing" section ("the accomodation
+should also have a number of (free) spots. The free spots are the spots
+minus the assigned users"), `accommodations.spots` (migration
+`007_add_accommodation_spots.sql`, nullable — existing rows created before
+this field simply have no capacity recorded) mirrors `vehicles.seats`:
+required and validated as a positive whole number on
+`POST /api/accommodations`, entered via a new "Anzahl Plätze" field in
+`AccommodationsPage.jsx`'s add form.
+
+`freeSpots` (`routes/accommodations.js`'s `publicAccommodation()`) is
+computed as `spots - assignments.length` — counting **every** assignment
+regardless of `pending`/`accepted` status, since a spot is reserved once
+assigned, matching how `HomePage.jsx`'s open-tasks logic already treats "has
+an accommodation" (pending counts, not just accepted). It is deliberately
+**not** clamped at 0: assigning to an accommodation isn't capacity-checked
+(the same design as `vehicles` — nothing stops assigning more people than
+`seats`), so `AccommodationsPage.jsx` shows a negative "frei" count in the
+danger color (`.assignable-spots--over`) as a visible overbooking signal
+rather than silently hiding it. A `null` `spots` (a pre-migration
+accommodation) hides the capacity line entirely instead of showing a
+misleading "0 frei".
+
+## Calendar arrival/departure markers
+
+Per docs/Spec.md's "Calendar view" section ("The day of arrival ... marked
+by a landing plane and the day of leaving by a departing one" — green
+highlighting for a confirmed accommodation already existed via
+`.calendar-cell--stay-accepted`, added when the Calendar view itself was
+first built), `CalendarPage.jsx` gained a small `PlaneIcon` component: one
+SVG (a paper-plane glyph) rendered twice — once as-is for departure, once
+rotated 180° for landing — rather than two separate icon shapes, so the two
+read as the same plane travelling in opposite directions instead of
+unrelated glyphs. Each row already computes `startKey` (arrival day, from
+the earliest flight's arrival) and `endKey` (departure day, from the latest
+flight's departure — `null` when the user has only one flight logged,
+per the existing "not yet returned" convention); the icon is layered inside
+the existing cell content (stay location text or a plain `✓`) rather than
+replacing it, via a small `.calendar-cell-content` flex wrapper, and both
+markers can appear on the same day in the (rare) case of a same-day
+turnaround. The cell's `title` tooltip gains "Ankunft"/"Abreise" text
+alongside any stay location, and the legend gained two matching entries so
+the icons are explained without relying on people guessing what a small
+rotated glyph means. `stroke="currentColor"` means each icon automatically
+picks up its cell's status color (muted for a plain presence day, green/
+orange for an accommodation) rather than needing its own color logic.
 
 ## Frontend
 

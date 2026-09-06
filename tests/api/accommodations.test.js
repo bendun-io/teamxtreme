@@ -24,8 +24,58 @@ async function seedUser(email) {
 
 test('creating an accommodation requires location/startDate/endDate', async () => {
   const { client } = await seedUser('acc1@test.local');
-  const res = await client.post('/api/accommodations', { location: 'Hotel X' });
+  const res = await client.post('/api/accommodations', { location: 'Hotel X', spots: 4 });
   assert.equal(res.status, 400);
+});
+
+test('creating an accommodation requires a positive whole number of spots', async () => {
+  const { client } = await seedUser('acc-spots@test.local');
+  const base = { location: 'Hotel X', startDate: '2026-06-01', endDate: '2026-06-08' };
+
+  const missing = await client.post('/api/accommodations', base);
+  assert.equal(missing.status, 400);
+
+  const zero = await client.post('/api/accommodations', { ...base, spots: 0 });
+  assert.equal(zero.status, 400);
+
+  const fractional = await client.post('/api/accommodations', { ...base, spots: 2.5 });
+  assert.equal(fractional.status, 400);
+});
+
+test('free spots is spots minus the number of assignments, regardless of status', async () => {
+  const { client: creator } = await seedUser('acc-free1@test.local');
+  const { client: other } = await seedUser('acc-free2@test.local');
+
+  const createRes = await creator.post('/api/accommodations', {
+    location: 'Hotel Free',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08',
+    spots: 2,
+  });
+  const accommodation = createRes.body.accommodation;
+  assert.equal(accommodation.spots, 2);
+  assert.equal(accommodation.freeSpots, 2);
+
+  const { user: otherUser } = await loginAsNewUser(baseUrl, {
+    email: 'acc-free3@test.local',
+    password: 'pw123456',
+    name: 'Third',
+  });
+
+  await creator.post(`/api/accommodations/${accommodation.id}/assign`, {});
+  const afterSelf = await creator.get('/api/accommodations');
+  assert.equal(afterSelf.body.accommodations[0].freeSpots, 1);
+
+  // A pending (not yet accepted) assignment still counts against free spots.
+  await creator.post(`/api/accommodations/${accommodation.id}/assign`, { userId: otherUser.id });
+  const afterPending = await creator.get('/api/accommodations');
+  assert.equal(afterPending.body.accommodations[0].freeSpots, 0);
+
+  // Assigning beyond capacity isn't blocked (mirrors vehicles) — free spots
+  // goes negative rather than being clamped, signalling an overbooking.
+  await other.post(`/api/accommodations/${accommodation.id}/assign`, {});
+  const overbooked = await creator.get('/api/accommodations');
+  assert.equal(overbooked.body.accommodations[0].freeSpots, -1);
 });
 
 test('self-assign is created already accepted', async () => {
@@ -34,6 +84,7 @@ test('self-assign is created already accepted', async () => {
     location: 'Hotel X',
     startDate: '2026-06-01',
     endDate: '2026-06-08',
+    spots: 4,
   });
   const accommodationId = createRes.body.accommodation.id;
 
@@ -52,6 +103,7 @@ test('assigning another user is pending until they accept, and only they can acc
     location: 'Hotel Y',
     startDate: '2026-06-01',
     endDate: '2026-06-08',
+    spots: 4,
   });
   const accommodationId = createRes.body.accommodation.id;
 
@@ -81,6 +133,7 @@ test('assigning the same user twice returns 409', async () => {
     location: 'Hotel Z',
     startDate: '2026-06-01',
     endDate: '2026-06-08',
+    spots: 4,
   });
   const accommodationId = createRes.body.accommodation.id;
 

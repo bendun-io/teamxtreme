@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal.jsx';
+import { useMediaCount } from '../media/MediaCountContext.jsx';
 import './MediaPage.css';
 
 function formatDate(value) {
@@ -50,6 +51,7 @@ function MediaPage() {
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState(null);
   const fileInputRef = useRef(null);
+  const { refresh: refreshMediaCount } = useMediaCount();
 
   async function loadMedia() {
     const res = await fetch('/api/media', { credentials: 'include' });
@@ -85,6 +87,7 @@ function MediaPage() {
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
       await loadMedia();
+      await refreshMediaCount();
     } finally {
       setUploading(false);
     }

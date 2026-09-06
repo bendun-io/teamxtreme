@@ -11,7 +11,9 @@ import vehiclesRouter from './routes/vehicles.js';
 import usersRouter from './routes/users.js';
 import profileRouter from './routes/profile.js';
 import mediaRouter from './routes/media.js';
-import { requireAuth } from './middleware/auth.js';
+import settingsRouter from './routes/settings.js';
+import adminRouter from './routes/admin.js';
+import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { uploadsDir } from './utils/uploads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,6 +56,8 @@ app.use('/api/vehicles', requireAuth, vehiclesRouter);
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/profile', requireAuth, profileRouter);
 app.use('/api/media', requireAuth, mediaRouter);
+app.use('/api/settings', requireAuth, settingsRouter);
+app.use('/api/admin', requireAuth, requireAdmin, adminRouter);
 
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));

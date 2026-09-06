@@ -404,13 +404,148 @@ it's the source of truth for "what's next," not a fixed roadmap.
   change — worth a proper browser-based check next time this page is
   touched.
 
+- **Admin Menu rework** — the spec grew a new "Admin Menu" section mid-session
+  (via a commit made directly by the user while this session was running,
+  landing alongside the Kalender nav fix above) calling for `/admin` to
+  become a card-list index rather than going straight to invites, with cards
+  for general settings (currently just an admin-editable WhatsApp link),
+  invite management (existing, just moved a level deeper), and a
+  confirmation-gated "clear data" reset button. Also picked up mid-session: a
+  new blanket requirement that every admin-only feature has a test proving
+  non-admins/unauthenticated callers are rejected.
+
+  Two decisions were confirmed with the user before building the destructive
+  part, since the spec's literal wording ("delete all uploaded files and
+  users") was ambiguous in a way that could have made the app permanently
+  inaccessible: **clear-data keeps admin accounts** (only deletes non-admins
+  and all trip data — flights, accommodations, vehicles, their assignments,
+  invites, shared media), and confirmation is **type-to-confirm** (the admin
+  must type `LÖSCHEN` exactly into a text field before the button enables)
+  rather than a plain OK/Cancel dialog. Full reasoning in
+  [Architecture.md](Architecture.md#admin-menu).
+
+  Backend: migration `006_create_settings.sql` (a small key/value `settings`
+  table, since the spec expects more settings later); `GET /api/settings`
+  (any authenticated user, for `HomePage.jsx`'s WhatsApp button);
+  `PATCH /api/admin/settings` and `POST /api/admin/clear-data`
+  (`routes/admin.js`, admin-only). Frontend: `AdminPage.jsx` (new index at
+  `/admin`, replacing the bottom nav's old direct link to
+  `/admin/invites`), `AdminSettingsPage.jsx` (new, at `/admin/settings`),
+  `AdminInvitesPage.jsx`'s back-link updated to `/admin`. Verified with a
+  full local login-and-click-through (Playwright driving the Vite dev server
+  against disposable Postgres/ClamAV containers): the admin menu's three
+  cards, the settings form prefilling and saving the real link, and the
+  clear-data modal's confirm button staying disabled until `LÖSCHEN` is
+  typed exactly. Tests: `tests/api/settings.test.js`,
+  `tests/api/admin.test.js` (seeds a full trip, asserts a wrong confirmation
+  phrase deletes nothing, a correct one wipes everything except the admin),
+  and new cases in `tests/security/admin-only.test.js` and
+  `tests/security/unauthenticated.test.js` for both new routes — 112 tests
+  total, all passing.
+
+- **Bottom nav "Bilder" item with a live media count badge** — the second
+  of the three remaining spec items from the mid-session update (see Admin
+  Menu above). `BottomNav.jsx` gained a gallery icon linking to `/media`,
+  positioned between Fahrzeuge and Profil per the spec's listed order, with
+  a small badge showing the total shared photo/video count.
+
+  Backend: `GET /api/media/count` (`db/media.js`'s `countMedia()`, a plain
+  `SELECT COUNT(*)`) — a dedicated lighter endpoint rather than reusing
+  `GET /api/media`'s full listing, since the badge is fetched on every
+  authenticated page. Frontend: a new `media/MediaCountContext.jsx`
+  (`{ count, refresh() }`, provided by `RequireAuth`/`RequireAdmin`
+  alongside `BottomNav`) rather than a plain fetch-on-mount in
+  `BottomNav.jsx` — `BottomNav` stays mounted across route changes, so
+  without a shared context the badge wouldn't update after an upload
+  without a hard reload; `MediaPage.jsx` now calls `refresh()` right after a
+  successful upload. New `.bottom-nav-icon-wrap`/`.bottom-nav-badge` CSS in
+  `BottomNav.css`. See
+  [Architecture.md](Architecture.md#media-count-badge) for the full design,
+  including the one accepted tradeoff (the badge briefly resets to 0 when
+  crossing between `RequireAuth` and `RequireAdmin` route branches, since
+  each provides its own context instance).
+
+  Verified with a full local login-and-click-through (Playwright driving the
+  Vite dev server against disposable Postgres/ClamAV containers): the badge
+  reads "0" on a fresh account, and updates to "1" immediately after
+  uploading a photo on `/media` — no reload needed. Tests:
+  `tests/api/media.test.js` gained a case asserting the count starts at 0
+  and reflects two uploads; `GET /api/media/count` added to
+  `tests/security/unauthenticated.test.js`'s route sweep. 115 tests total,
+  all passing.
+
+- **Accommodation capacity** — the third of the four spec items from the
+  mid-session update (see Admin Menu and the media count badge above for
+  the first two). A `spots` field on accommodations (mirroring
+  `vehicles.seats`), with a `freeSpots` shown as spots minus the number of
+  assignments.
+
+  Backend: migration `007_add_accommodation_spots.sql`
+  (`accommodations.spots`, nullable — existing rows keep `null` rather than
+  a backfilled guess); `POST /api/accommodations` now requires `spots` as a
+  positive whole number (same validation shape as vehicles' `seats`);
+  `publicAccommodation()` in `routes/accommodations.js` adds `freeSpots =
+  spots - assignments.length`, counting pending and accepted assignments
+  alike (a spot is reserved once assigned, not only once accepted) and
+  deliberately **not** clamped at 0 — assigning isn't capacity-checked
+  (same as vehicles), so a negative value is a real "overbooked" signal, not
+  a bug. Frontend: `AccommodationsPage.jsx` gained an "Anzahl Plätze" input
+  in the add form and a "`X Platz/Plätze · Y frei`" line per accommodation
+  (singular "Platz" at exactly 1, hidden entirely when `spots` is `null`),
+  styled red (`.assignable-spots--over` in `AssignableList.css`) when
+  overbooked. Full reasoning in
+  [Architecture.md](Architecture.md#accommodation-capacity).
+
+  Verified with a full local click-through (Playwright): created a
+  1-spot accommodation via the real form → "1 Platz · 1 frei"; self-assigned
+  as admin → "0 frei"; registered a second account through the real invite
+  flow and self-assigned them too → "-1 frei" rendered in red, confirming
+  the overbooking path end to end, not just the happy path. Tests: existing
+  `tests/api/accommodations.test.js` cases updated to pass `spots` (now
+  required), plus two new cases — spots validation (missing/zero/fractional
+  all rejected) and a full free-spots walkthrough (self-assign → pending
+  assign → over-capacity assign, asserting 2 → 1 → 0 → -1) — and
+  `tests/api/admin.test.js`/`tests/security/ownership.test.js`'s
+  accommodation fixtures updated to include `spots` too. 117 tests total,
+  all passing.
+
+- **Calendar arrival/departure markers** — the fourth and last item from the
+  mid-session spec update (see Admin Menu, the media count badge, and
+  accommodation capacity above for the other three). Green highlighting for
+  a *confirmed* accommodation day already existed (`.calendar-cell--stay-
+  accepted`, from when the Calendar view was first built) — the only
+  actually-missing piece was the landing/departing plane icon on each row's
+  arrival/departure day cell.
+
+  Frontend-only, no schema or API changes. `CalendarPage.jsx` gained a
+  `PlaneIcon` component (one SVG glyph, rotated 180° for the landing
+  variant rather than two separate shapes) layered inside the existing cell
+  content — stay location text or `✓` — via a new `.calendar-cell-content`
+  flex wrapper, so the marker doesn't replace whatever the cell already
+  showed. The cell's tooltip and the legend both gained matching
+  "Ankunft"/"Abreise" text. Full reasoning in
+  [Architecture.md](Architecture.md#calendar-arrivaldeparture-markers).
+
+  Verified with a full local click-through (Playwright, seeding two users'
+  flights and an accommodation via the real API against disposable
+  Postgres/ClamAV containers, since the UI forms for Flights/Accommodations
+  were already exercised in earlier verification passes): the admin's
+  arrival day shows the landing icon, their departure day (scrolled into
+  view, since the table is wider than the viewport) shows the departure
+  icon, and the accommodation's confirmed days render green exactly as
+  before — the new markers layer over that pre-existing coloring rather
+  than clobbering it. No new automated tests (no frontend test suite exists
+  in this project — see [tests/README.md](../tests/README.md); this was a
+  pure frontend/UI change with nothing to add to the backend suite), so the
+  browser click-through above is this feature's only verification.
+
 ## Next unfinished item
 
-Nothing is currently outstanding from `docs/Spec.md` beyond swapping the
-placeholder WhatsApp group link in `HomePage.jsx`'s "Hilfreiche Links" card
-for the real invite link once it's available (blocked on that link existing,
-not on any further implementation work — the user was asked and chose to
-leave it for now). Worth a fresh read-through of `docs/Spec.md` against the
-running app next time to confirm nothing else has been missed, rather than
-assuming this list is exhaustive — that's exactly how the missing Kalender
-nav item above was found.
+Nothing is currently outstanding from `docs/Spec.md`, including the full
+mid-session update covered above (Admin Menu, media count badge,
+accommodation capacity, Calendar markers) — beyond the still-open
+placeholder WhatsApp group link noted earlier (blocked on the real link
+existing, not on implementation work). Worth a fresh read-through of
+`docs/Spec.md` against the running app next time to confirm nothing else
+has been missed, rather than assuming this list is exhaustive — that's
+exactly how the missing Kalender nav item was found this session.

@@ -44,6 +44,10 @@ const protectedRoutes = [
   ['GET', '/api/media'],
   ['POST', '/api/media'],
   ['GET', '/api/media/download-all'],
+  ['GET', '/api/media/count'],
+  ['GET', '/api/settings'],
+  ['PATCH', '/api/admin/settings'],
+  ['POST', '/api/admin/clear-data'],
 ];
 
 for (const [method, path] of protectedRoutes) {

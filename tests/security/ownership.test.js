@@ -60,6 +60,7 @@ test("a user cannot accept an accommodation assignment that isn't theirs", async
     location: 'Hotel Intrusion Test',
     startDate: '2026-06-01',
     endDate: '2026-06-08',
+    spots: 4,
   });
   const accommodationId = createRes.body.accommodation.id;
 

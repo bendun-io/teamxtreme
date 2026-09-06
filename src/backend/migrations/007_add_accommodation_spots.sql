@@ -1,0 +1,1 @@
+ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS spots INTEGER;

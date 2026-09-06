@@ -113,14 +113,21 @@ pending assignment.
 #### `GET /api/accommodations`
 Overview of all accommodations with their assignments, ordered by
 `startDate` ascending.
-**200** `{ "accommodations": [{ id, createdBy, createdByName, location, startDate, endDate, notes, createdAt, assignments: [{ id, userId, userName, assignedById, assignedByName, status, createdAt }] }] }`
-— `status` is `"pending"` or `"accepted"`.
+**200** `{ "accommodations": [{ id, createdBy, createdByName, location, startDate, endDate, notes, spots, freeSpots, createdAt, assignments: [{ id, userId, userName, assignedById, assignedByName, status, createdAt }] }] }`
+— `status` is `"pending"` or `"accepted"`. `spots` is `null` for an
+accommodation created before this field existed. `freeSpots` is
+`spots` minus the number of assignments (pending *and* accepted both
+count — a spot is reserved once assigned, not only once accepted), `null`
+whenever `spots` is; it is **not** clamped at 0, since assigning isn't
+capacity-checked (same as vehicles) — a negative value signals more people
+are assigned than there's room for.
 
 #### `POST /api/accommodations`
-Body: `{ location, startDate, endDate, notes? }` (`startDate`/`endDate` are
-`YYYY-MM-DD`). Creates an accommodation owned by the caller.
+Body: `{ location, startDate, endDate, spots, notes? }` (`startDate`/
+`endDate` are `YYYY-MM-DD`). Creates an accommodation owned by the caller.
 **201** `{ "accommodation": {...} }`
-**400** if `location`, `startDate` or `endDate` is missing.
+**400** if `location`, `startDate` or `endDate` is missing, or `spots`
+isn't a positive whole number.
 
 #### `POST /api/accommodations/:id/assign`
 Body: `{ userId? }`. Omit `userId` to assign yourself (created already
@@ -204,12 +211,48 @@ quality — no resizing/transcoding), up to 500 MB.
 **400** missing file, file isn't an image/video, exceeds the size limit, or
 it failed the malware scan (`{ "error": "file failed malware scan" }`).
 
+#### `GET /api/media/count`
+Total number of shared photos/videos, for the bottom nav's "Bilder" badge —
+a lighter query than `GET /api/media` for something fetched on every
+authenticated page.
+**200** `{ "count": N }`
+
 #### `GET /api/media/download-all`
 Streams every shared photo/video as a single zip (for the gallery's "download
 all" button), each entry named after its `originalName` (de-duplicated with
 the media id when two uploads share a name).
 **200** `application/zip`, `Content-Disposition: attachment; filename="teamxtreme-media.zip"`.
 **404** `{ "error": "no media to download" }` if nothing has been shared yet.
+
+### Settings
+
+#### `GET /api/settings`
+Requires auth (any user, not admin-only — the homepage needs the current
+WhatsApp link).
+**200** `{ "settings": { "whatsappLink": "..." } }` — `whatsappLink` defaults
+to a placeholder until an admin sets a real one (see
+[Admin](#admin)/`PATCH /api/admin/settings`).
+
+### Admin
+All routes require auth **and** `is_admin`; see
+[Architecture.md](Architecture.md#admin-menu).
+
+#### `PATCH /api/admin/settings`
+Body: `{ "whatsappLink": "..." }`.
+**200** `{ "settings": { "whatsappLink": "..." } }`
+**400** if `whatsappLink` is present but empty/whitespace-only.
+
+#### `POST /api/admin/clear-data`
+Resets the app for a new season: deletes every shared photo/video (DB rows
+and files on disk), every flight/accommodation/vehicle and their
+assignments, every invite, and every **non-admin** user (and their profile
+picture file, if locally uploaded). Admin accounts and their own profile
+data are kept so the app stays usable immediately afterwards.
+Body: `{ "confirm": "LÖSCHEN" }` — must match exactly, so the destructive
+action can't be triggered by an accidental or scripted request.
+**200** `{ "cleared": { users, flights, accommodations, vehicles, media } }`
+— counts of rows deleted.
+**400** if `confirm` doesn't match `"LÖSCHEN"` exactly (nothing is deleted).
 
 ### Planned
 

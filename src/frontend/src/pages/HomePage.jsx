@@ -42,6 +42,7 @@ function HomePage() {
   const { user } = useAuth();
   const [shareFeedback, setShareFeedback] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [whatsappLink, setWhatsappLink] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -55,6 +56,15 @@ function HomePage() {
       setTasks(computeOpenTasks(user.id, flights, accommodations));
     }
     loadTasks();
+
+    async function loadSettings() {
+      const res = await fetch('/api/settings', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setWhatsappLink(data.settings.whatsappLink);
+      }
+    }
+    loadSettings();
   }, [user]);
 
   async function handleShare() {
@@ -150,14 +160,16 @@ function HomePage() {
         <section className="card">
           <h2>Hilfreiche Links</h2>
           <div className="helpful-links">
-            <a
-              className="helpful-link-button"
-              href="https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE_LINK"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              WhatsApp-Gruppe
-            </a>
+            {whatsappLink && (
+              <a
+                className="helpful-link-button"
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp-Gruppe
+              </a>
+            )}
             <a
               className="helpful-link-button"
               href="https://www.leogalatijiujitsu.com/"

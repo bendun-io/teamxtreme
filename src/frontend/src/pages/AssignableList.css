@@ -100,6 +100,15 @@
   color: var(--color-text);
 }
 
+.assignable-spots {
+  margin: 0.3rem 0 0;
+}
+
+.assignable-spots--over {
+  color: var(--color-danger-text);
+  font-weight: 600;
+}
+
 .assignable-owner {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;

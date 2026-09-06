@@ -12,6 +12,14 @@ export async function listMedia() {
   return rows;
 }
 
+// A lighter query than listMedia() for the bottom nav's badge, which is
+// fetched on every authenticated page — no need to pull every row's full
+// metadata just to display a count.
+export async function countMedia() {
+  const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM media');
+  return rows[0].count;
+}
+
 export async function findMediaById(id) {
   const { rows } = await pool.query(`${SELECT_MEDIA} WHERE m.id = $1`, [id]);
   return rows[0] || null;

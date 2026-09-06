@@ -5,7 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadMiddleware, isAcceptedMediaFile, isImageFile } from '../utils/scanUpload.js';
 import { generateImageThumbnail } from '../utils/thumbnail.js';
 import { uploadsDir } from '../utils/uploads.js';
-import { listMedia, createMedia } from '../db/media.js';
+import { listMedia, createMedia, countMedia } from '../db/media.js';
 
 const uploadMedia = uploadMiddleware({
   fieldName: 'file',
@@ -43,6 +43,13 @@ const router = Router();
 router.get('/', asyncHandler(async (req, res) => {
   const media = await listMedia();
   res.json({ media: media.map(publicMedia) });
+}));
+
+// For the bottom nav's Bilder badge (see docs/Spec.md's "Bottom Navigation"
+// section) — declared as its own literal path, so route order relative to
+// '/' and '/download-all' doesn't matter (none of these use a wildcard).
+router.get('/count', asyncHandler(async (req, res) => {
+  res.json({ count: await countMedia() });
 }));
 
 // Streams every shared photo/video as a single zip, for the gallery's

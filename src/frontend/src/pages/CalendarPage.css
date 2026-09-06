@@ -88,6 +88,17 @@
   font-style: italic;
 }
 
+.calendar-cell-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.calendar-flight-icon {
+  flex-shrink: 0;
+}
+
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
@@ -99,4 +110,12 @@
 .calendar-legend-item {
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
+}
+
+.calendar-legend-item--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
 }
