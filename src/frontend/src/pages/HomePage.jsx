@@ -5,11 +5,12 @@ import '../App.css';
 
 const packingList = [
   'Reisepass / Personalausweis',
-  'Sportkleidung und Trainingsschuhe',
-  'Badesachen',
+  '2x GI',
+  'Badeschuhe',
   'Sonnencreme und Sonnenbrille',
   'Ladekabel und Powerbank',
   'Wasserflasche',
+  'Strandkleidung'
 ];
 
 function HomePage() {

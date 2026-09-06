@@ -53,10 +53,21 @@ The app should be used for the team to organize travel together in a better way 
 - Similar a person should be able to add a rental vehicle and a number of how many people fit in that vehicle.
 - The users should be able to share images and videos in original file quality through the app with each other.
 
+### Starting Page
+
+- The starting page should contain a list of cards below each other with general information. This can be hardcoded.
+- It should start with a header picture.
+- Then there should be the list of training times and the location where is trained. 
+- Then traveling information (nearest Airport is Malaga). 
+- Then there should be a card with helpful links (put there as buttons).
+  - One link to a WhatsApp Group.
+  - One link to https://www.leogalatijiujitsu.com/ "Website of the Leo Galati Team".
+- Finally a recommendation on what to pack for the travel.
+
+
 ### Other features
 
 - The app should have a 'share' option to share the link to the app with someone via phone.
-- The starting page should contain a list of cards below each other with general information. This can be hardcoded. It should start with a header picture, then there should be the list of training times and the location where is trained. Then traveling information (nearest Airport is Malaga). Finally a recommendation on what to pack for the travel.
 - There should be a navigation on the bottom (mobile first view). This navigation should have the buttons "Home", "Travel", "Accommodation", "Vehicles", "Settings" and if the user is an admin "Admin". Home should show that starting page, travel should show the flights, and so on. Settings should go to the profile settings of the user. Admin is for now the invites page.
 - The navigation should use appropriate icons and avoid text whenever possible.
 
