@@ -306,30 +306,41 @@ it's the source of truth for "what's next," not a fixed roadmap.
   [Architecture.md](Architecture.md#login-brute-force-protection) and
   [API.md](API.md#post-apiauthlogin) for details.
 
+- **CSRF/XSS hardening audit** — the spec explicitly calls this out
+  ("especially stored XSS"). Findings: CSRF is already adequately covered
+  (every state-changing route is `POST`/`PATCH`/`DELETE`, and the
+  `sameSite: lax` session cookie isn't sent on a cross-site
+  `POST`/fetch) — no explicit token needed. The frontend never uses
+  `dangerouslySetInnerHTML`, so user text rendered back (notes, profile
+  fields, filenames) is already safe via JSX's automatic escaping. The one
+  real gap: uploads (profile pictures, shared media) are served back
+  unauthenticated from `/uploads/<filename>`, and an SVG file (an XML
+  document that can carry a `<script>`) passed the "image" filter just like
+  any raster photo — a stored-XSS vector via file upload that ClamAV
+  wouldn't catch. Fixed by excluding `image/svg+xml` in
+  `utils/scanUpload.js`'s `isAcceptedMediaFile()` (camera-roll photos are
+  never SVG, so no functionality lost), plus defense-in-depth: a global
+  `X-Content-Type-Options: nosniff` header (also covers a renamed-extension
+  bypass of the SVG check), `Content-Security-Policy: frame-ancestors 'none'`
+  and `Referrer-Policy: strict-origin-when-cross-origin` on every response,
+  and restricting the previously wide-open `cors()` to `APP_BASE_URL` (or
+  `localhost:8000`) plus the Vite dev origin. Tests:
+  `tests/api/media.test.js` and `tests/api/profile.test.js` each gained an
+  SVG-rejection case, and a new `tests/security/security-headers.test.js`
+  asserts the new headers are present. See
+  [Architecture.md](Architecture.md#csrf--xss-hardening) for details.
+
 ## Next unfinished item
 
-`docs/Spec.md` picked up two more new requirements (added directly to the
-spec during the open-tasks-card work in a prior pass, not yet implemented):
+**Media gallery rework** — thumbnails generated at upload time (for both
+images and videos, videos additionally marked so they're visually
+distinguishable from photos in the grid), the gallery showing thumbnails
+only, a "download all" button, and click-through to a full-resolution view
+with its own download option. Needs an image/video processing step in the
+upload pipeline (`routes/media.js`, `utils/scanUpload.js`), new storage for
+thumbnails, and a `MediaPage.jsx` rework — the largest, most UI-heavy piece
+remaining.
 
-1. **CSRF/XSS hardening** — the spec now explicitly calls this out
-   ("especially stored XSS"). Worth an audit of where user-supplied text
-   (flight/accommodation/vehicle notes, profile fields, media filenames) is
-   rendered back without escaping, plus confirming the session cookie's
-   `sameSite: lax` + no custom state-changing `GET` routes is adequate CSRF
-   protection or whether an explicit token is wanted.
-2. **Media gallery rework** — thumbnails generated at upload time (for both
-   images and videos, videos additionally marked so they're visually
-   distinguishable from photos in the grid), the gallery showing thumbnails
-   only, a "download all" button, and click-through to a full-resolution
-   view with its own download option. Bigger than the other one: needs an
-   image/video processing step in the upload pipeline (`routes/media.js`,
-   `utils/scanUpload.js`), new storage for thumbnails, and a
-   `MediaPage.jsx` rework.
-
-Recommended order: the CSRF/XSS audit next (mostly review + targeted fixes,
-smaller than the media rework), then the media rework (the largest, most
-UI-heavy piece remaining).
-
-Beyond those two, and swapping the placeholder WhatsApp group link in
+Beyond that, and swapping the placeholder WhatsApp group link in
 `HomePage.jsx`'s "Hilfreiche Links" card for the real invite link once it's
 available, nothing else is outstanding from `docs/Spec.md`.

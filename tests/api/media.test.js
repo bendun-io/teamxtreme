@@ -173,6 +173,27 @@ test('POST /api/media accepts a photo whose browser omitted the MIME type, based
   assert.equal(res.status, 201);
 });
 
+test('POST /api/media rejects an SVG even though its MIME type starts with image/', async () => {
+  // SVG is an XML document that can carry a <script> — unlike a raster
+  // photo, a browser navigated straight to the stored file (not just an
+  // <img> embed) would execute it, a stored-XSS vector via upload. ClamAV
+  // wouldn't flag this as malware, so it must be rejected by type instead.
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media8@test.local',
+    password: 'pw123456',
+    name: 'Uploader',
+  });
+
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.domain)</script></svg>';
+  const form = new FormData();
+  form.set('file', new Blob([Buffer.from(svg)], { type: 'image/svg+xml' }), 'evil.svg');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 400);
+
+  const list = await client.get('/api/media');
+  assert.equal(list.body.media.length, 0);
+});
+
 test('POST /api/media rejects a file that fails the malware scan and never stores it', async () => {
   const { client } = await loginAsNewUser(baseUrl, {
     email: 'media4@test.local',

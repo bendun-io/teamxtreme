@@ -83,6 +83,22 @@ test('PATCH /api/profile uploads a picture and rejects non-image files', async (
   assert.equal(textRes.status, 400);
 });
 
+test('PATCH /api/profile rejects an SVG picture even though its MIME type starts with image/', async () => {
+  // Mirrors the same SVG stored-XSS check in tests/api/media.test.js —
+  // profile pictures share the same upload/scan pipeline.
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile9@test.local',
+    password: 'pw123456',
+    name: 'Picture Person',
+  });
+
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.domain)</script></svg>';
+  const form = new FormData();
+  form.set('picture', new Blob([Buffer.from(svg)], { type: 'image/svg+xml' }), 'evil.svg');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 400);
+});
+
 test('PATCH /api/profile updates phone and Instagram handle, and clears them again', async () => {
   const { client } = await loginAsNewUser(baseUrl, {
     email: 'profile6@test.local',

@@ -10,6 +10,14 @@ const IMAGE_EXTENSIONS = new Set([
 ]);
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm', '.3gp', '.3g2']);
 
+// SVG's declared MIME type (image/svg+xml) matches the "image/*" check below
+// like any other image, but unlike a raster photo it's an XML document that
+// can carry a <script> that executes if a browser is ever navigated straight
+// to /uploads/<file>.svg (not just embedded via <img>) — a stored-XSS vector
+// via file upload. Camera-roll photos are never SVG, so excluding it costs
+// no real functionality.
+const DANGEROUS_IMAGE_TYPES = new Set(['image/svg+xml']);
+
 // Mobile browsers don't always set a usable Content-Type on a camera-roll
 // upload — e.g. a photo/video that's still an iCloud/Google Photos
 // placeholder not yet downloaded to the device often comes through as
@@ -18,7 +26,7 @@ const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm
 // to the file extension instead of rejecting an otherwise-normal upload.
 export function isAcceptedMediaFile(file, { image = true, video = true } = {}) {
   const type = file.mimetype || '';
-  if (image && type.startsWith('image/')) return true;
+  if (image && type.startsWith('image/') && !DANGEROUS_IMAGE_TYPES.has(type)) return true;
   if (video && type.startsWith('video/')) return true;
 
   const ext = path.extname(file.originalname || '').toLowerCase();

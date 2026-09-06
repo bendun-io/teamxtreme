@@ -24,9 +24,27 @@ export const app = express();
 // real visitor rather than the tunnel daemon's own docker-network address.
 app.set('trust proxy', 1);
 
-app.use(cors());
+// Only the app's own origin (and, in local dev, the Vite dev server — which
+// normally proxies /api same-origin anyway, see vite.config.js) ever needs
+// to call this API with the session cookie attached; a wildcard origin here
+// would just widen the surface for no benefit.
+const allowedOrigins = [process.env.APP_BASE_URL || 'http://localhost:8000', 'http://localhost:5173'];
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Baseline hardening headers (see docs/Spec.md's "Security" section):
+// - nosniff stops a browser from ever guessing a served file is HTML/SVG
+//   when its Content-Type says otherwise, closing off MIME-confusion XSS.
+// - frame-ancestors 'none' blocks this app from being framed (clickjacking).
+// - referrer-policy avoids leaking full URLs (which can carry tokens like
+//   invite links) to third-party sites linked from within the app.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);

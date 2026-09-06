@@ -198,6 +198,59 @@ dev/tests, where there's no Cloudflare Tunnel in front). `app.js` also sets
 `app.set('trust proxy', 1)` since `cloudflared` is the one reverse-proxy hop
 between the internet and this server in production.
 
+## CSRF & XSS hardening
+
+Per the spec's "Security" requirement ("especially stored XSS"), an audit
+covered every place user-supplied content is stored and later rendered back,
+plus the app's CSRF posture:
+
+- **CSRF**: every state-changing route is `POST`/`PATCH`/`DELETE` — there are
+  no state-changing `GET` routes — and the session cookie is
+  `sameSite: lax` (see [Auth](#auth)), which browsers only attach to a
+  cross-site request for a top-level `GET` navigation, never a cross-site
+  form `POST`/fetch. That combination is sufficient CSRF protection for this
+  app without an explicit CSRF token.
+- **Reflected/stored XSS in the frontend**: the React frontend never uses
+  `dangerouslySetInnerHTML` (or any other raw-HTML injection point) anywhere
+  — every place user text (flight/accommodation/vehicle notes, profile
+  fields, media filenames, invitee names) is rendered goes through normal
+  JSX, which HTML-escapes it automatically. mailto/tel/`wa.me`/Instagram
+  links built from user-supplied contact fields
+  (`components/ContactLinks.jsx`) are set via JSX's `href={...}` attribute
+  binding rather than string-built markup, so they can't break out of the
+  attribute either.
+- **Stored XSS via file upload**: uploads (profile pictures, shared media)
+  are served back publicly and unauthenticated from `/uploads/<filename>`
+  (see [Media storage](#media-storage)) — before this audit, an SVG file
+  passed `isAcceptedMediaFile()`'s "declared MIME type starts with `image/`"
+  check like any other image, but unlike a raster photo (JPEG/PNG/etc.) an
+  SVG is an XML document that can carry a `<script>`; a browser navigated
+  directly to that URL (not just loading it inline via `<img>`) would
+  execute it in the app's own origin — a stored-XSS vector, and one ClamAV's
+  malware scan wouldn't catch since the payload isn't malware. Fixed in
+  `utils/scanUpload.js`'s `isAcceptedMediaFile()`, which now explicitly
+  excludes `image/svg+xml`; camera-roll photos/videos are never SVG, so this
+  costs no real functionality. Covered by
+  `tests/api/media.test.js`/`tests/api/profile.test.js` ("... rejects an SVG
+  even though its MIME type starts with image/").
+- **Defense in depth**: `app.js` now sets `X-Content-Type-Options: nosniff`
+  on every response, so a browser never MIME-sniffs a served file into
+  something more dangerous than its declared `Content-Type` (e.g. treating a
+  mislabeled upload as HTML/SVG) — this also protects against the SVG vector
+  above via a renamed extension, not just the direct MIME check. It also
+  sets `Content-Security-Policy: frame-ancestors 'none'` (clickjacking) and
+  `Referrer-Policy: strict-origin-when-cross-origin` (avoids leaking full
+  URLs, which can carry invite tokens, to third-party sites linked from
+  within the app). Covered by `tests/security/security-headers.test.js`.
+- **CORS**: `cors()` was previously called with no options, which reflects
+  `Access-Control-Allow-Origin: *` for any caller. Not itself exploitable —
+  there's no `Access-Control-Allow-Credentials`, so a cross-origin browser
+  request still can't have the session cookie read back by the calling
+  page — but needlessly wide. Restricted to `APP_BASE_URL` (falling back to
+  `http://localhost:8000`) plus the Vite dev server origin
+  (`http://localhost:5173`, used only for [local development](#local-development); it normally proxies `/api` same-origin anyway, see
+  `vite.config.js`).
+
 ## Contact info
 
 Per the spec, every user can add an email address, phone number and
