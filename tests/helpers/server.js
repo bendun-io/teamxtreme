@@ -36,6 +36,7 @@ export async function resetDb() {
       accommodations,
       vehicles,
       flights,
+      media,
       invites,
       users
     RESTART IDENTITY CASCADE

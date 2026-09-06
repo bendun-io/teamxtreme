@@ -67,9 +67,9 @@ function HomePage() {
       <main className="card-list">
         <section className="card">
           <h2>Trainingszeiten</h2>
-          <p className="placeholder">
-            Trainingszeiten und -ort hier eintragen.
-          </p>
+          <p>Mo-Fr: 11:00 - 13:00 Class, 13:00 - 14:00 Open Mat.</p>
+
+          Training beim Leo Galati Team Marbella: <a href="https://www.google.com/maps?gs_lcrp=EgZjaHJvbWUyCggAEEUYFhgeGDkyCggBEAAYgAQYogQyBwgCEAAY7wUyBwgDEAAY7wXSAQg0NjI0ajBqN6gCALACAA&um=1&ie=UTF-8&fb=1&gl=de&sa=X&geocode=KQvuTCGjK3MNMSHa0ePuRIlV&daddr=Av.+Valle+Incl%C3%A1n,+40,+Nueva+Andaluc%C3%ADa,+29660+Marbella,+M%C3%A1laga,+Spain" target="_blank" rel="noopener noreferrer"> Av. Valle Inclán, 40, Nueva Andalucía, 29660 Marbella, Málaga, Spain</a>
         </section>
 
         <section className="card">
@@ -84,6 +84,11 @@ function HomePage() {
           <Link to="/vehicles">Fahrzeuge ansehen / eintragen →</Link>
           <br />
           <Link to="/calendar">Kalender ansehen →</Link>
+        </section>
+
+        <section className="card">
+          <h2>Fotos &amp; Videos</h2>
+          <Link to="/media">Fotos &amp; Videos ansehen / teilen →</Link>
         </section>
 
         <section className="card">

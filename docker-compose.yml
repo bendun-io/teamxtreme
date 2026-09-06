@@ -7,12 +7,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      clamav:
+        condition: service_healthy
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-teamxtreme}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-teamxtreme}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
       JWT_SECRET: ${JWT_SECRET}
       APP_BASE_URL: ${APP_BASE_URL:-https://teamxtreme.bendun.io}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
@@ -41,6 +45,19 @@ services:
       timeout: 5s
       retries: 5
 
+  clamav:
+    image: clamav/clamav-debian:1.4
+    container_name: teamxtreme-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token ${CLOUD_FLARE_TUNNEL_TOKEN}
@@ -49,3 +66,4 @@ services:
 volumes:
   postgres-data:
   uploads-data:
+  clamav-data:

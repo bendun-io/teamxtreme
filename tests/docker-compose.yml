@@ -15,3 +15,15 @@ services:
       interval: 2s
       timeout: 5s
       retries: 10
+
+  clamav-test:
+    image: clamav/clamav-debian:1.4
+    container_name: teamxtreme-clamav-test
+    ports:
+      - "3311:3310"
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s

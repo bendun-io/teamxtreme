@@ -41,6 +41,8 @@ const protectedRoutes = [
   ['POST', `/api/vehicles/${fakeId}/assignments/${fakeId}/accept`],
   ['POST', '/api/auth/invites'],
   ['GET', '/api/auth/invites'],
+  ['GET', '/api/media'],
+  ['POST', '/api/media'],
 ];
 
 for (const [method, path] of protectedRoutes) {

@@ -109,9 +109,9 @@ function InvitePage() {
               <a className="auth-social-button" href={`/api/auth/google?invite=${token}`}>
                 Mit Google fortfahren
               </a>
-              <a className="auth-social-button" href={`/api/auth/instagram?invite=${token}`}>
+              {/* <a className="auth-social-button" href={`/api/auth/instagram?invite=${token}`}>
                 Mit Instagram fortfahren
-              </a>
+              </a> */}
             </div>
           </>
         )}

@@ -75,7 +75,7 @@ users can still register/log in with a password.
 ### Instagram Login
 1. Meta for Developers → create an app → add the **Instagram** product
    (Instagram API with Instagram Login, the successor to the deprecated
-   Basic Display API).
+   Basic Display API). (https://developers.facebook.com/apps)
 2. This requires the account(s) that will log in to be Instagram
    **professional** (business/creator) accounts — a personal Instagram
    account cannot use this login flow.

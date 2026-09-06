@@ -83,9 +83,9 @@ function LoginPage() {
           <a className="auth-social-button" href="/api/auth/google">
             Mit Google anmelden
           </a>
-          <a className="auth-social-button" href="/api/auth/instagram">
+          {/* <a className="auth-social-button" href="/api/auth/instagram">
             Mit Instagram anmelden
-          </a>
+          </a> */}
         </div>
 
         <p className="auth-hint">

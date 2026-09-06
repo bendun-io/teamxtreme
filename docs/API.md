@@ -164,17 +164,33 @@ Uploaded pictures are stored under the `uploads-data` Docker volume (see
 `/uploads/<filename>`; only `name`, only `picture`, or both may be sent —
 whichever is omitted is left unchanged.
 **200** `{ "user": {...} }`
-**400** empty `name`, or `picture` isn't an image / exceeds 5 MB.
+**400** empty `name`, `picture` isn't an image / exceeds 5 MB, or it failed
+the malware scan (`{ "error": "file failed malware scan" }`) — see
+[Architecture.md](Architecture.md#malware-scanning).
+
+### Media
+
+All routes require auth. Anyone can upload; everyone sees everyone's photos
+and videos (no delete endpoint — out of scope for now). Every upload —
+here and for profile pictures — is scanned by ClamAV before it's stored; see
+[Architecture.md](Architecture.md#malware-scanning).
+
+#### `GET /api/media`
+Gallery of everyone's shared photos/videos, ordered newest first.
+**200** `{ "media": [{ id, uploadedBy, uploadedByName, url, originalName, mimeType, fileSize, createdAt }] }`
+— `url` is the file's `/uploads/<filename>` path.
+
+#### `POST /api/media`
+Body: `multipart/form-data` with a `file` field (image or video, original
+quality — no resizing/transcoding), up to 500 MB.
+**201** `{ "media": {...} }`
+**400** missing file, file isn't an image/video, exceeds the size limit, or
+it failed the malware scan (`{ "error": "file failed malware scan" }`).
 
 ### Planned
 
 Not implemented yet — see [DevelopmentPlan.md](DevelopmentPlan.md) for build
 order.
-
-#### Media sharing
-- `POST /api/media` — upload (original quality — storage strategy is an open
-  decision, see DevelopmentPlan.md).
-- `GET /api/media` — list/gallery.
 
 No endpoint for the homepage cards (training times, travel info, packing
 list) — that content is hardcoded directly in the frontend per spec.

@@ -4,4 +4,6 @@ dist
 dist-ssr
 *.local
 src/backend/uploads
+src/backend/quarantine
 tests/.tmp-uploads
+tests/.tmp-quarantine

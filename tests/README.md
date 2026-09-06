@@ -23,9 +23,13 @@ npm test
 
 `npm test` first brings up a throwaway `postgres-test` container (via
 `docker-compose.yml` in this folder, port 5433, tmpfs storage — it never
-touches your real dev/prod database) and waits for it to be healthy, then
-runs every `*.test.js` file under `api/` and `security/` with Node's built-in
-test runner, using the fixed test credentials in `.env.test`.
+touches your real dev/prod database) and a throwaway `clamav-test` container
+(port 3311, so it never collides with a real dev/prod clamd on 3310) and
+waits for both to be healthy, then runs every `*.test.js` file under `api/`
+and `security/` with Node's built-in test runner, using the fixed test
+credentials in `.env.test`. `clamav-test` uses the database-preloaded image
+tag (not `_base`), so it doesn't need to download virus signatures on
+startup — it's usually healthy within ~30 seconds.
 
 Tear down the container when you're done (optional — it's tmpfs, so a
 `docker compose down` or a reboot wipes it either way):
@@ -44,7 +48,10 @@ npm run down
   invite flow, for speed) and/or logs them in through the real
   `POST /api/auth/login` route.
 - `api/` — one file per resource, covering the documented success and error
-  responses in [../docs/API.md](../docs/API.md).
+  responses in [../docs/API.md](../docs/API.md). `api/media.test.js` also
+  covers the ClamAV integration end to end (via the real `clamav-test`
+  container) by uploading the standard EICAR test string and asserting it's
+  rejected and never stored — no mocking of the scanner either.
 - `security/` — non-users hitting authenticated routes, non-admins hitting
   admin-only routes, and users trying to modify data owned by someone else.
 

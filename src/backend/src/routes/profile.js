@@ -1,19 +1,11 @@
-import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
-import multer from 'multer';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { updateUser, publicUser } from '../db/users.js';
-import { uploadsDir } from '../utils/uploads.js';
+import { uploadMiddleware } from '../utils/scanUpload.js';
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: uploadsDir,
-    filename: (req, file, cb) => {
-      cb(null, `${randomUUID()}${path.extname(file.originalname).toLowerCase()}`);
-    },
-  }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+const uploadPicture = uploadMiddleware({
+  fieldName: 'picture',
+  maxFileSize: 5 * 1024 * 1024,
   fileFilter: (req, file, cb) => {
     if (!/^image\//.test(file.mimetype)) {
       return cb(new Error('picture must be an image'));
@@ -21,13 +13,6 @@ const upload = multer({
     cb(null, true);
   },
 });
-
-function uploadPicture(req, res, next) {
-  upload.single('picture')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message });
-    next();
-  });
-}
 
 const router = Router();
 

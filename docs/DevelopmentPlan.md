@@ -130,33 +130,47 @@ it's the source of truth for "what's next," not a fixed roadmap.
   admin, `app.listen()`). See [tests/README.md](../tests/README.md) for how
   to run it.
 
+- **Media sharing** and **upload malware scanning** — built together, since
+  building media sharing without scanning would have meant a second upload
+  path needing retrofitting shortly after. `GET/POST /api/media` (multipart `file` field,
+  image or video, up to 500 MB, original quality — no resizing/transcoding),
+  mounted behind `requireAuth`; everyone can upload and everyone sees
+  everyone's media (no delete endpoint — out of scope for now). A new
+  `clamav` service (`clamav/clamav-debian:1.4`, preloaded signature database)
+  in `docker-compose.yml` scans every upload — profile pictures now too —
+  before it becomes reachable: `utils/scanUpload.js` (a shared multer-based
+  middleware used by both `routes/profile.js` and `routes/media.js`) writes
+  to a `quarantineDir` outside the `/uploads` static mount, scans it via
+  `utils/malwareScan.js` (wraps the `clamscan` npm package, talking to
+  `clamav` over TCP — no local `clamscan`/`clamdscan` binary needed), and
+  only moves it into the public `uploadsDir` once it's clean; a failed or
+  errored scan deletes the quarantined file and fails the request (400 for
+  an infected file, 500 if the scanner itself is unreachable — fails closed
+  either way). Frontend: `MediaPage.jsx` (upload form + a grid gallery of
+  everyone's photos/videos, images as `<img>`, videos as `<video controls>`)
+  at `/media`, linked from the homepage's travel info section like Calendar.
+  Tests: a new `clamav-test` container in `tests/docker-compose.yml` (real
+  ClamAV, not mocked) plus `tests/api/media.test.js`, which also uploads the
+  standard EICAR test string and asserts it's rejected and never stored. See
+  [API.md](API.md#media) and
+  [Architecture.md](Architecture.md#malware-scanning) for details.
+
 ### Not started
 Roughly in build order — earlier items unblock later ones:
 
-1. **Media sharing** — images/videos in original quality, shared between
-   users. The storage mechanism is now precedented by profile pictures (a
-   Docker volume, served via `express.static`, random-UUID filenames) — this
-   item is mainly the gallery/list UI and an upload flow that preserves
-   original quality (no resizing), rather than a new infra decision.
-2. **Upload malware scanning** — spec addition: file uploads (currently
-   profile pictures; media sharing above will add more) must be scanned
-   before being stored in an accessible way. No scanner is wired up yet.
-   Likely shape: a ClamAV sidecar container (`clamd`) added to
-   `docker-compose.yml`, with the upload route streaming the file to it
-   (e.g. via `clamscan`/`clamdscan` over the socket) before writing it to
-   the `uploads-data` volume — an infra decision worth confirming before
-   building, since it adds a new service to the compose stack.
-3. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
-   and header image (`src/frontend/public/header.png`) with real branding/
-   team photo; fill in the real training times/location on the homepage
-   (currently a placeholder string in `pages/HomePage.jsx`).
+1. **Invite "Send E-Mail" button** — spec addition: alongside the existing
+   copy-link button on `AdminInvitesPage.jsx`, add a button that opens a
+   `mailto:` link pre-filled with the invite URL, so an admin can hand off
+   sending the invite to their own mail client instead of only copy/pasting
+   the link elsewhere.
+2. **PWA polish** — replace the placeholder icons
+   (`src/frontend/public/icons/`) and header image
+   (`src/frontend/public/header.png`) with real branding/team photo. The
+   homepage's training-times/location text has since been filled in with
+   real content (`pages/HomePage.jsx`), so this item is now just images.
 
 ## Next unfinished item
 
-**Media sharing** (item 1 above) — images/videos in original quality shared
-between users, following the profile-picture upload precedent. Upload
-malware scanning (item 2) is worth deciding alongside it — building it
-before or alongside media sharing avoids wiring up a second upload path that
-then needs retrofitting — but that's a call worth confirming (ClamAV sidecar
-vs. another approach) before building, since it adds a new service to the
-compose stack.
+**Invite "Send E-Mail" button** (item 1 above) — the smallest remaining
+piece from the spec's User Management section. After that, PWA icon polish
+(item 2) is the only other open item.
