@@ -252,9 +252,24 @@ it's the source of truth for "what's next," not a fixed roadmap.
   reachable at `/uploads/<filename>` — profile picture uploads share the
   same `scanUpload.js` code path, so no separate fix/test was needed there.
 
+- **Homepage "Hilfreiche Links" card** — the spec's Starting Page section
+  called for a card with a WhatsApp group button and a link to
+  https://www.leogalatijiujitsu.com/ ("Website of the Leo Galati Team"); a
+  prior pass had built every other homepage card but missed this one.
+  Frontend only: `HomePage.jsx` gained a "Hilfreiche Links" card between the
+  photo/video card and the packing list, with two buttons styled via the new
+  `.helpful-link-button`/`.helpful-links` rules in `App.css` (mirroring
+  `AdminInvitesPage.css`'s existing `.invite-row a` button-as-anchor
+  pattern). The WhatsApp href is a placeholder
+  (`https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE_LINK`) — the real
+  group invite link wasn't available at build time; swap it in
+  `HomePage.jsx` once it exists. No backend changes.
+
 ## Next unfinished item
 
-None outstanding from `docs/Spec.md` — every listed feature has an
+Swap the placeholder WhatsApp group link in `HomePage.jsx`'s "Hilfreiche
+Links" card for the real invite link once it's available. Beyond that,
+nothing is outstanding from `docs/Spec.md` — every listed feature has an
 end-to-end implementation. Remaining work is polish/content, at the
 user's discretion: swapping `header.svg` for a real team photo if/when one
 is available, and any spec additions that come up as the trip gets closer.

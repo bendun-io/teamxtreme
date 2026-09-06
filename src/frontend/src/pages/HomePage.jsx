@@ -93,6 +93,28 @@ function HomePage() {
         </section>
 
         <section className="card">
+          <h2>Hilfreiche Links</h2>
+          <div className="helpful-links">
+            <a
+              className="helpful-link-button"
+              href="https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE_LINK"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp-Gruppe
+            </a>
+            <a
+              className="helpful-link-button"
+              href="https://www.leogalatijiujitsu.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Leo Galati Team Website
+            </a>
+          </div>
+        </section>
+
+        <section className="card">
           <h2>Packempfehlung</h2>
           <ul>
             {packingList.map((item) => (
