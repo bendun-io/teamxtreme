@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import '../App.css';
@@ -13,12 +14,50 @@ const packingList = [
 
 function HomePage() {
   const { user } = useAuth();
+  const [shareFeedback, setShareFeedback] = useState(false);
+
+  async function handleShare() {
+    const url = window.location.origin;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'TeamXtreme', url });
+      } catch {
+        // user cancelled the share sheet — nothing to do
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareFeedback(true);
+      setTimeout(() => setShareFeedback(false), 1500);
+    } catch {
+      window.prompt('Link kopieren:', url);
+    }
+  }
 
   return (
     <div className="page">
       <header className="hero">
         <img src="/header.png" alt="Titelbild" className="hero-image" />
         <h1 className="hero-title">TeamXtreme</h1>
+        <button
+          type="button"
+          className="share-button"
+          onClick={handleShare}
+          aria-label="App teilen"
+          title="App teilen"
+        >
+          {shareFeedback ? (
+            '✓'
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <path d="M8.6 10.5 15.4 6.5M8.6 13.5l6.8 4" />
+            </svg>
+          )}
+        </button>
       </header>
 
       <div className="user-bar">

@@ -55,6 +55,8 @@ provider to wire up first), ask the user briefly instead of guessing.
   already exists rather than introducing a parallel setup.
 - If you discover the spec is out of date or contradicted by existing code, say so
   and confirm with the user before overwriting either.
+- Whenever a UI element is created, make sure that it is encapsuled in a way that it can be re-used across the application. Also prefer re-using existing elements wherever possible.
+- Ensure that styles are consistent and follow the design system, and avoid duplicating CSS rules unnecessarily.
 - Deliver a working increment (it should run via docker-compose where applicable),
   not a partial stub.
 

@@ -93,19 +93,26 @@ it's the source of truth for "what's next," not a fixed roadmap.
   name column, since the day range can exceed mobile screen width), linked
   from the homepage's travel info card as `/calendar`.
 
+- **Share option** — a round icon-only button (share glyph) overlaid on the
+  homepage header image. Uses the Web Share API (`navigator.share`) to open
+  the device's native share sheet when available (mobile browsers); falls
+  back to `navigator.clipboard.writeText` (brief "✓" feedback on the button,
+  mirroring `AdminInvitesPage`'s invite-link copy pattern) and finally to
+  `window.prompt` if the Clipboard API is also unavailable. Shares
+  `window.location.origin` (the app's own URL), not an invite link —
+  distinct from `AdminInvitesPage`'s existing per-invite "copy link" button.
+  No backend involved. Frontend: `pages/HomePage.jsx` + `.share-button` in
+  `App.css`.
+
 ### Not started
 Roughly in build order — earlier items unblock later ones:
 
-1. **Share option** — share the app link via the device's native share sheet
-   (Web Share API), falling back to copy-link. (`AdminInvitesPage` already
-   has a "copy link" button for invites specifically — this item is the
-   general "share the app" button from the spec.)
-2. **Media sharing** — images/videos in original quality, shared between
+1. **Media sharing** — images/videos in original quality, shared between
    users. The storage mechanism is now precedented by profile pictures (a
    Docker volume, served via `express.static`, random-UUID filenames) — this
    item is mainly the gallery/list UI and an upload flow that preserves
    original quality (no resizing), rather than a new infra decision.
-3. **Upload malware scanning** — spec addition: file uploads (currently
+2. **Upload malware scanning** — spec addition: file uploads (currently
    profile pictures; media sharing above will add more) must be scanned
    before being stored in an accessible way. No scanner is wired up yet.
    Likely shape: a ClamAV sidecar container (`clamd`) added to
@@ -113,21 +120,23 @@ Roughly in build order — earlier items unblock later ones:
    (e.g. via `clamscan`/`clamdscan` over the socket) before writing it to
    the `uploads-data` volume — an infra decision worth confirming before
    building, since it adds a new service to the compose stack.
-4. **Test suite** — spec addition: a `/tests` folder with tests runnable
+3. **Test suite** — spec addition: a `/tests` folder with tests runnable
    locally against the API, plus dedicated security tests (unauthenticated
    callers hitting authenticated routes, non-admins hitting admin-only
    routes like `/api/auth/invites`). No test tooling (runner, HTTP client)
    is chosen yet.
-5. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
+4. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
    and header image (`src/frontend/public/header.png`) with real branding/
    team photo; fill in the real training times/location on the homepage
    (currently a placeholder string in `pages/HomePage.jsx`).
 
 ## Next unfinished item
 
-**Share option** (item 1 above) — the general "share this app" button via
-the Web Share API. Note two other spec additions just landed (see items 3
-and 4) that are worth confirming direction on before building: upload
-malware scanning needs an infra decision (ClamAV sidecar vs. another
-approach), and the test suite needs a runner/tooling choice — both are
-independent of the build-order above and could be picked up any time.
+**Media sharing** (item 1 above) — images/videos in original quality shared
+between users, following the profile-picture upload precedent. Two other
+spec additions (items 2 and 3) are worth confirming direction on before
+building: upload malware scanning needs an infra decision (ClamAV sidecar vs.
+another approach) — and doing it before or alongside media sharing avoids
+wiring up a second upload path that then needs retrofitting — and the test
+suite needs a runner/tooling choice. Both are independent of the build-order
+above and could be picked up any time.

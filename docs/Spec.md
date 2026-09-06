@@ -40,6 +40,7 @@ The app should be used for the team to organize travel together in a better way 
 - The navigation should use appropriate icons and avoid text whenever possible.
 - There should be a calendar view in a table format. It should start with the first flight as first column and end with the last returning flight as columns. Then it should have one row per user and visualize in the fields if the user is already there and not yet returned as well as the accomodation the user is staying. The users should be sorted by arrival time (first flight).
 - Users should be able to add in their profile an email address, a phone number and an instragram handle in order to be contacted by other users.
+- In the calendar view, when clicked on a user, it should open an overlay that shows the different contact options for the user, i.e., the mail adress with an icon to click on that has a mailto link, similar a phone and a whatsapp link and an instagram link.
 
 ## Security
 

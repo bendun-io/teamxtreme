@@ -79,7 +79,9 @@ src/
         LoginPage.jsx
         InvitePage.jsx        # invite-acceptance: password signup or Google/Instagram
         AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links
-        HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list)
+        HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list);
+                                # also the app-wide "share" button (Web Share API, clipboard
+                                # fallback) overlaid on the header image
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
