@@ -265,11 +265,61 @@ it's the source of truth for "what's next," not a fixed roadmap.
   group invite link wasn't available at build time; swap it in
   `HomePage.jsx` once it exists. No backend changes.
 
+- **Homepage open-tasks card** — the spec's "Starting Page" and "User tasks"
+  sections called for a card, second in the list right after the header
+  image, showing each user's open tasks (a flight to camp, a return flight,
+  and an accommodation on file), hidden entirely when nothing is missing.
+  A prior "everything's done" pass had missed this — it was the one
+  homepage card with no implementation at all, not polish. ("plus a
+  recommendation" in the spec's wording was confirmed with the user to be a
+  typo for "an accomodation", matching every other feature in that
+  section.) Frontend only, no new backend route: `HomePage.jsx` fetches the
+  caller's own flights/accommodations from the existing `GET /api/flights`/
+  `GET /api/accommodations` and derives task state client-side (same
+  pattern as `CalendarPage.jsx`) — 0 flights → outbound + return tasks, 1
+  flight → a return-flight task only (a flight has no outbound/return flag,
+  so this mirrors `CalendarPage.jsx`'s existing convention of treating the
+  earliest flight as the trip there and the latest as the trip back), no
+  accommodation assignment (pending or accepted) → an accommodation task.
+  New `.task-list`/`.task-item` rules in `App.css` (warning-colored pills,
+  reusing `--color-warning-bg`/`--color-warning-text`). Verified in a
+  browser: a fresh user sees all three tasks; adding an outbound + return
+  flight and self-assigning to an accommodation makes the card disappear.
+  See [Architecture.md](Architecture.md#frontend) for details.
+
 ## Next unfinished item
 
-Swap the placeholder WhatsApp group link in `HomePage.jsx`'s "Hilfreiche
-Links" card for the real invite link once it's available. Beyond that,
-nothing is outstanding from `docs/Spec.md` — every listed feature has an
-end-to-end implementation. Remaining work is polish/content, at the
-user's discretion: swapping `header.svg` for a real team photo if/when one
-is available, and any spec additions that come up as the trip gets closer.
+`docs/Spec.md` picked up three new requirements (added directly to the spec
+during the open-tasks-card work above, not yet implemented):
+
+1. **Login brute-force protection** — a failed-login counter per source IP,
+   reset on a successful login, blocking further login attempts from that
+   IP for 10 minutes once it reaches 10 failures. Needs a place to track
+   attempts (in-memory is fine for a single-container deployment like this
+   one — no separate store currently exists) and a check in
+   `routes/auth.js`'s login handler.
+2. **CSRF/XSS hardening** — the spec now explicitly calls this out
+   ("especially stored XSS"). Worth an audit of where user-supplied text
+   (flight/accommodation/vehicle notes, profile fields, media filenames) is
+   rendered back without escaping, plus confirming the session cookie's
+   `sameSite: lax` + no custom state-changing `GET` routes is adequate CSRF
+   protection or whether an explicit token is wanted.
+3. **Media gallery rework** — thumbnails generated at upload time (for both
+   images and videos, videos additionally marked so they're visually
+   distinguishable from photos in the grid), the gallery showing thumbnails
+   only, a "download all" button, and click-through to a full-resolution
+   view with its own download option. Bigger than the other two: needs an
+   image/video processing step in the upload pipeline (`routes/media.js`,
+   `utils/scanUpload.js`), new storage for thumbnails, and a
+   `MediaPage.jsx` rework.
+
+None of these were built in this pass — they surfaced only once the spec
+was updated mid-session, and each is substantial enough to deserve its own
+increment rather than being tacked onto unrelated work. Recommended order:
+brute-force protection first (smallest, self-contained, security-relevant),
+then the CSRF/XSS audit (mostly review + targeted fixes), then the media
+rework (the largest, most UI-heavy piece).
+
+Beyond those three, and swapping the placeholder WhatsApp group link in
+`HomePage.jsx`'s "Hilfreiche Links" card for the real invite link once it's
+available, nothing else is outstanding from `docs/Spec.md`.

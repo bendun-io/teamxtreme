@@ -114,7 +114,9 @@ src/
                                 # or send them via a mailto: link
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list);
                                 # also the app-wide "share" button (Web Share API, clipboard
-                                # fallback) overlaid on the header image
+                                # fallback) overlaid on the header image, and the "Offene
+                                # Aufgaben" open-tasks card (computed client-side from the
+                                # caller's own flights/accommodations, hidden when empty)
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
@@ -278,6 +280,19 @@ container start/restart — just incremental updates.
   packing recommendation list. The training times/location card has real
   content; `public/header.svg` is a designed brand-colored banner (not an
   actual team photo) — swap it for a real photo whenever one is available.
+- **Open tasks card**: per the spec's "User tasks" section, every user needs
+  a flight to camp, a return flight, and an accommodation on file; each
+  missing part is an open task shown on the starting page, and the whole
+  card is omitted once nothing is missing. `HomePage.jsx` fetches the
+  caller's own `GET /api/flights`/`GET /api/accommodations` on mount (no new
+  backend route — same client-side-derivation pattern as `CalendarPage.jsx`)
+  and computes: 0 flights → both an outbound and a return task; exactly 1
+  flight → a return-flight task only (mirroring `CalendarPage.jsx`'s
+  convention of treating a user's earliest flight as the trip there and
+  latest as the trip back, since flights have no explicit outbound/return
+  flag); no `accommodation_assignments` row for the caller (pending or
+  accepted — the task is about having added one, not about acceptance) → an
+  accommodation task. Each task links to the page that resolves it.
 
 ## Local development
 

@@ -1,5 +1,9 @@
 # Specification
 
+## General Purpose
+
+The app should be used for the team to organize travel together in a better way while everyone is planning / booking things separately.
+
 ## Architecture 
 
 - The application should be deployed through the docker-compose file.
@@ -10,10 +14,6 @@
 - Sessions should be managed through JWT tokens.
 - Uploaded media should be stored in a mounted volume.
 - The database migrations should be idempotent, i.e., running them again on an existing database should lead to the same outcome.
-
-## General Purpose
-
-The app should be used for the team to organize travel together in a better way while everyone is planning / booking things separately.
 
 ## Deployment information
 
@@ -28,6 +28,8 @@ The app should be used for the team to organize travel together in a better way 
 ## Security
 
 - File uploads should run through a malware scan (ClamAV sidecar) before they are stored in an accessible manner.
+- Protect agains CSRF and XSS, especially stored XSS.
+- Protect against login brute forcing by having a failed attempt counter that is reset upon successfull login. If the counter reaches 10, block logins from the trying IP for 10 minutes.
 
 ## Test cases
 
@@ -52,6 +54,7 @@ The app should be used for the team to organize travel together in a better way 
 - People should be able to add an accomodation and people should be able to assign themselves or beeing assigned (accept that assignment) to an accomodation. The accomodation should have a location and a start and endate plus a field for extra information.
 - Similar a person should be able to add a rental vehicle and a number of how many people fit in that vehicle.
 - The users should be able to share images and videos in original file quality through the app with each other.
+- The view showing the images should only show a thumbnail for better performance. There should be at the top right a download all button and upon click of the image a higher resolution should load with the option of downloading the single one. The thumbnail should be created upon upload and also for the videos there should be just a thumbnail with an indication that it is a video.
 
 ### Starting Page
 
@@ -67,7 +70,7 @@ The app should be used for the team to organize travel together in a better way 
 
 ### User tasks
 
-The user has to add at least a flight to the camp and one returning flight plus a recommendation.
+The user has to add at least a flight to the camp and one returning flight plus an accommodation.
 Each missing part is an open task that should be shown on the starting page.
 
 ### Bottom Navigation

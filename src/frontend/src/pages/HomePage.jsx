@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import '../App.css';
@@ -13,9 +13,49 @@ const packingList = [
   'Strandkleidung'
 ];
 
+// Mirrors CalendarPage.jsx's convention: with no explicit outbound/return flag on a
+// flight, a user's earliest flight (by departure time) is treated as the trip there
+// and their latest as the trip back — the same flight fills both roles if it's the
+// only one they've entered.
+function computeOpenTasks(userId, flights, accommodations) {
+  const tasks = [];
+  const ownFlightCount = flights.filter((f) => f.userId === userId).length;
+
+  if (ownFlightCount === 0) {
+    tasks.push({ key: 'flight-outbound', label: 'Hinflug zum Camp eintragen', to: '/flights' });
+    tasks.push({ key: 'flight-return', label: 'Rückflug eintragen', to: '/flights' });
+  } else if (ownFlightCount === 1) {
+    tasks.push({ key: 'flight-return', label: 'Rückflug eintragen', to: '/flights' });
+  }
+
+  const hasAccommodation = accommodations.some((a) =>
+    a.assignments.some((asg) => asg.userId === userId)
+  );
+  if (!hasAccommodation) {
+    tasks.push({ key: 'accommodation', label: 'Unterkunft hinzufügen', to: '/accommodations' });
+  }
+
+  return tasks;
+}
+
 function HomePage() {
   const { user } = useAuth();
   const [shareFeedback, setShareFeedback] = useState(false);
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    if (!user) return;
+    async function loadTasks() {
+      const [flightsRes, accommodationsRes] = await Promise.all([
+        fetch('/api/flights', { credentials: 'include' }),
+        fetch('/api/accommodations', { credentials: 'include' }),
+      ]);
+      const flights = flightsRes.ok ? (await flightsRes.json()).flights : [];
+      const accommodations = accommodationsRes.ok ? (await accommodationsRes.json()).accommodations : [];
+      setTasks(computeOpenTasks(user.id, flights, accommodations));
+    }
+    loadTasks();
+  }, [user]);
 
   async function handleShare() {
     const url = window.location.origin;
@@ -66,6 +106,21 @@ function HomePage() {
       </div>
 
       <main className="card-list">
+        {tasks.length > 0 && (
+          <section className="card task-card">
+            <h2>Offene Aufgaben</h2>
+            <ul className="task-list">
+              {tasks.map((task) => (
+                <li key={task.key}>
+                  <Link to={task.to} className="task-item">
+                    {task.label} →
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="card">
           <h2>Trainingszeiten</h2>
           <p>Mo-Fr: 11:00 - 13:00 Class, 13:00 - 14:00 Open Mat.</p>
