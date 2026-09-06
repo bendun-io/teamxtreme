@@ -4,8 +4,6 @@ services:
       context: ./src
       dockerfile: Dockerfile
     container_name: teamxtreme-server
-    ports:
-      - "1337:8000"
     depends_on:
       postgres:
         condition: service_healthy
