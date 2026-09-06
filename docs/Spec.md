@@ -14,6 +14,11 @@
 
 The app should be used for the team to organize travel together in a better way while everyone is planning / booking things separately.
 
+## Deployment information
+
+- The deployed domain is https://teamxtreme.bendun.io/
+- Cloudflare for the deployment is setup.
+- The Google Auth information as depicted by the local .env is created on the deployment.
 
 ## Features
 
