@@ -57,6 +57,7 @@ The app should be used for the team to organize travel together in a better way 
 
 - The starting page should contain a list of cards below each other with general information. This can be hardcoded.
 - It should start with a header picture.
+- Second there should be a list of open user tasks, if no open user task is there, this card should not be shown.
 - Then there should be the list of training times and the location where is trained. 
 - Then traveling information (nearest Airport is Malaga). 
 - Then there should be a card with helpful links (put there as buttons).
@@ -64,12 +65,27 @@ The app should be used for the team to organize travel together in a better way 
   - One link to https://www.leogalatijiujitsu.com/ "Website of the Leo Galati Team".
 - Finally a recommendation on what to pack for the travel.
 
+### User tasks
+
+The user has to add at least a flight to the camp and one returning flight plus a recommendation.
+Each missing part is an open task that should be shown on the starting page.
+
+### Bottom Navigation
+
+There should be a navigation on the bottom (mobile first view). This navigation should have the elements:
+- "Home" show that starting page,
+- "Calendar" should show the calendar view,
+- "Travel" should show the flights view,
+- "Accommodation" should show the accomodation view,
+- "Vehicles" should show the vehicle page,
+- "Settings" should go to the profile settings of the user,
+- and if the user is an admin "Admin". Admin is for now the invites page.
+
+The navigation should use appropriate icons and avoid text whenever possible.
+
 
 ### Other features
 
 - The app should have a 'share' option to share the link to the app with someone via phone.
-- There should be a navigation on the bottom (mobile first view). This navigation should have the buttons "Home", "Travel", "Accommodation", "Vehicles", "Settings" and if the user is an admin "Admin". Home should show that starting page, travel should show the flights, and so on. Settings should go to the profile settings of the user. Admin is for now the invites page.
-- The navigation should use appropriate icons and avoid text whenever possible.
-
 - There should be a calendar view in a table format. It should start with the first flight as first column and end with the last returning flight as columns. Then it should have one row per user and visualize in the fields if the user is already there and not yet returned as well as the accomodation the user is staying. The users should be sorted by arrival time (first flight).
 - In the calendar view, when clicked on a user, it should open an overlay that shows the different contact options for the user, i.e., the mail adress with an icon to click on that has a mailto link, similar a phone and a whatsapp link and an instagram link.
