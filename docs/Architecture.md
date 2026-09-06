@@ -229,7 +229,12 @@ media) runs through ClamAV before it becomes reachable at `/uploads/...`:
    `500` — scanning failures fail closed rather than skipping the check.
 4. Otherwise the file is moved (same filename) from quarantine into
    `uploadsDir`, and only then is it referenced in a response or the
-   database.
+   database. The move tries a plain rename first and falls back to
+   copy-then-delete on `EXDEV` ("cross-device link not permitted") — in
+   production `uploadsDir` is the `uploads-data` Docker volume while
+   `quarantineDir` is a plain directory on the container's own writable
+   layer (see [Media storage](#media-storage)), and `rename()` can't cross
+   that filesystem boundary.
 
 Every rejection in `scanUpload.js` (a multer-level error such as an
 oversized file, a `fileFilter` rejection, or an infected/failed scan) is

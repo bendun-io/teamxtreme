@@ -231,6 +231,27 @@ it's the source of truth for "what's next," not a fixed roadmap.
   [API.md](API.md#users) and
   [Architecture.md](Architecture.md#contact-info) for details.
 
+- **Bugfix: media uploads failing with EXDEV in production** — the logs
+  showed every upload failing with `EXDEV: cross-device link not permitted,
+  rename '/app/quarantine/<uuid>.jpg' -> '/app/uploads/<uuid>.jpg'`. Root
+  cause: in `docker-compose.yml`, `uploadsDir` (`/app/uploads`) is the
+  `uploads-data` named volume, while `quarantineDir` (`/app/quarantine`) is
+  a plain directory on the container's own writable layer — two different
+  filesystems, and `fs.rename()` can't move a file across that boundary.
+  This never showed up locally or in `tests/`, since dev/test setups always
+  point `UPLOADS_DIR`/`QUARANTINE_DIR` at plain folders on the same disk.
+  Fixed in `utils/scanUpload.js`: the quarantine-to-uploads move now tries
+  `rename()` first and falls back to `copyFile()` + `unlink()` when it fails
+  with `EXDEV`; if removing the now-redundant quarantine copy afterwards
+  fails, that's only logged as a warning (an untidy leftover temp file, not
+  a functional or security issue) rather than failing the upload. See
+  [Architecture.md](Architecture.md#malware-scanning). Tests:
+  `tests/api/media.test.js` reproduces the exact bug by mocking
+  `fs.rename()` to throw `EXDEV` (confirmed to fail with a 500 against the
+  pre-fix code) and asserts the upload still succeeds and the file is
+  reachable at `/uploads/<filename>` — profile picture uploads share the
+  same `scanUpload.js` code path, so no separate fix/test was needed there.
+
 ## Next unfinished item
 
 None outstanding from `docs/Spec.md` — every listed feature has an

@@ -1,7 +1,12 @@
 import { test, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
+import fs, { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { startServer, stopServer, resetDb, closeDb } from '../helpers/server.js';
 import { loginAsNewUser } from '../helpers/seed.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let baseUrl;
 
@@ -64,6 +69,73 @@ test('POST /api/media accepts an image and serves it back from /uploads', async 
 
   const form = new FormData();
   form.set('file', new Blob([pngBytes], { type: 'image/png' }), 'photo.png');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 201);
+  assert.ok(res.body.media.url.startsWith('/uploads/'));
+
+  const fileRes = await client.get(res.body.media.url);
+  assert.equal(fileRes.status, 200);
+});
+
+test('POST /api/media accepts a real PWA icon and round-trips it byte-for-byte', async () => {
+  // The other tests here upload a synthetic 1x1 PNG — good for exercising
+  // the API shape, but a poor stand-in for what people actually share.
+  // This uses one of the frontend's real icon files (a normal multi-KB
+  // PNG) to confirm a realistic image survives quarantine -> ClamAV scan ->
+  // uploadsDir -> GET /uploads/<filename> without being altered.
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media6@test.local',
+    password: 'pw123456',
+    name: 'Icon Uploader',
+  });
+
+  const iconPath = path.join(__dirname, '../../src/frontend/public/icons/icon-192.png');
+  const iconBytes = await readFile(iconPath);
+
+  const form = new FormData();
+  form.set('file', new Blob([iconBytes], { type: 'image/png' }), 'icon-192.png');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.media.originalName, 'icon-192.png');
+  assert.equal(res.body.media.mimeType, 'image/png');
+  assert.equal(res.body.media.fileSize, iconBytes.length);
+
+  const listRes = await client.get('/api/media');
+  assert.ok(listRes.body.media.some((m) => m.id === res.body.media.id));
+
+  // The shared ApiClient decodes every response body as text/JSON, which
+  // would corrupt binary data, so fetch the stored file directly instead.
+  const fileRes = await fetch(`${baseUrl}${res.body.media.url}`, {
+    headers: { cookie: client.cookie },
+  });
+  assert.equal(fileRes.status, 200);
+  const downloaded = Buffer.from(await fileRes.arrayBuffer());
+  assert.ok(downloaded.equals(iconBytes), 'downloaded file must match the original byte-for-byte');
+});
+
+test('POST /api/media still stores the file when quarantine and uploads dirs are on different filesystems (EXDEV)', async (t) => {
+  // Reproduces a production bug: in docker-compose, uploadsDir is the
+  // `uploads-data` named volume while quarantineDir is a plain directory on
+  // the container's writable layer, so moving a clean file out of
+  // quarantine crosses a filesystem boundary. node:fs/promises.rename()
+  // can't do that and throws EXDEV — scanUpload.js must fall back to
+  // copying the file instead. Simulate that boundary here (both dirs are on
+  // the same disk in this test environment) by making the first rename()
+  // call fail with EXDEV, same as production.
+  t.mock.method(fs, 'rename', async () => {
+    const err = new Error('EXDEV: cross-device link not permitted');
+    err.code = 'EXDEV';
+    throw err;
+  });
+
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media7@test.local',
+    password: 'pw123456',
+    name: 'Cross Device Uploader',
+  });
+
+  const form = new FormData();
+  form.set('file', new Blob([pngBytes], { type: 'image/png' }), 'cross-device.png');
   const res = await client.post('/api/media', undefined, { formData: form });
   assert.equal(res.status, 201);
   assert.ok(res.body.media.url.startsWith('/uploads/'));

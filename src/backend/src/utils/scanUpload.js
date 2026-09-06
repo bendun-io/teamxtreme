@@ -27,6 +27,31 @@ export function isAcceptedMediaFile(file, { image = true, video = true } = {}) {
   return false;
 }
 
+// quarantineDir and uploadsDir aren't guaranteed to be on the same
+// filesystem — in production, uploadsDir is the `uploads-data` Docker
+// volume while quarantineDir is a plain directory on the container's own
+// writable layer (see uploads.js) — so a plain rename() can fail with
+// EXDEV ("cross-device link not permitted"). Fall back to copy + delete
+// in that case.
+async function moveIntoUploads(sourcePath, destPath) {
+  try {
+    await fs.rename(sourcePath, destPath);
+    return;
+  } catch (err) {
+    if (err.code !== 'EXDEV') throw err;
+  }
+
+  await fs.copyFile(sourcePath, destPath);
+  try {
+    await fs.unlink(sourcePath);
+  } catch (unlinkErr) {
+    // The file is already safely in place at destPath — a leftover
+    // quarantine copy is untidy but not a functional or security problem
+    // (quarantineDir is never served), so don't fail the upload over it.
+    console.warn(`failed to remove quarantined file after copying it to uploads: ${sourcePath}`, unlinkErr);
+  }
+}
+
 // A multer field that quarantines the upload, scans it with ClamAV, and only
 // then moves it into the publicly-served uploads dir — so an infected file
 // is never reachable at /uploads/<filename> (see docs/Spec.md's "Security"
@@ -66,7 +91,7 @@ export function uploadMiddleware({ fieldName, maxFileSize, fileFilter }) {
         }
 
         const destination = path.join(uploadsDir, req.file.filename);
-        await fs.rename(req.file.path, destination);
+        await moveIntoUploads(req.file.path, destination);
         req.file.destination = uploadsDir;
         req.file.path = destination;
         next();
