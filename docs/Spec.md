@@ -31,6 +31,7 @@ The app should be used for the team to organize travel together in a better way 
 - Protect agains CSRF and XSS, especially stored XSS.
 - Protect against login brute forcing by having a failed attempt counter that is reset upon successfull login. If the counter reaches 10, block logins from the trying IP for 10 minutes.
 - There should be a github dependabot workflow for at least all package.json, Dockerfile and docker compose files to ensure regular updates.
+- For all admin features, ensure that there is a test that only admins can use them and other users or unauthenticated ones cannot.
 
 ## Test cases
 
@@ -49,10 +50,17 @@ The app should be used for the team to organize travel together in a better way 
 - The user should be able to manage his/her own profile by setting a name and a profile picture. If social login is used, it should also use the profile picture from there as starting profile picture.
 - Users should be able to add in their profile an email address, a phone number and an instragram handle in order to be contacted by other users.
 
+### Admin Menu
+
+The admin menu should contain cards with different features / subnavigations. These are:
+- General settings: for now, this should only be the whatsapp link that can be set here. But this might extend in the future.
+- Managing invitations
+- A clear data button: this should delete all uploaded files and users. It should ask for extra confirmation when clicked.
+
 ### Core information sharing
 
 - Everyone should be able to add their flight information and there should be an overview of flights.
-- People should be able to add an accomodation and people should be able to assign themselves or beeing assigned (accept that assignment) to an accomodation. The accomodation should have a location and a start and endate plus a field for extra information.
+- People should be able to add an accomodation and people should be able to assign themselves or beeing assigned (accept that assignment) to an accomodation. The accomodation should have a location and a start and endate plus a field for extra information. Furthermore, the accomodation should also have a number of (free) spots. The free spots are the spots minus the assigned users.
 - Similar a person should be able to add a rental vehicle and a number of how many people fit in that vehicle.
 - The users should be able to share images and videos in original file quality through the app with each other.
 - The view showing the images should only show a thumbnail for better performance. There should be at the top right a download all button and upon click of the image a higher resolution should load with the option of downloading the single one. The thumbnail should be created upon upload and also for the videos there should be just a thumbnail with an indication that it is a video.
@@ -82,14 +90,19 @@ There should be a navigation on the bottom (mobile first view). This navigation 
 - "Travel" should show the flights view,
 - "Accommodation" should show the accomodation view,
 - "Vehicles" should show the vehicle page,
+- "Pictures" should show the gallery view (it should also have a number attached to the icon with the total number of pictures shared)
 - "Settings" should go to the profile settings of the user,
 - and if the user is an admin "Admin". Admin is for now the invites page.
 
 The navigation should use appropriate icons and avoid text whenever possible.
 
+### Calendar view
+
+- There should be a calendar view in a table format. It should start with the first flight as first column and end with the last returning flight as columns. Then it should have one row per user and visualize in the fields if the user is already there and not yet returned as well as the accomodation the user is staying. The users should be sorted by arrival time (first flight).
+- In the calendar view, when clicked on a user, it should open an overlay that shows the different contact options for the user, i.e., the mail adress with an icon to click on that has a mailto link, similar a phone and a whatsapp link and an instagram link.
+- The day of arrival in the calendar view should be marked by a landing plane and the day of leaving by a departing one.
+- Days with a confirmed accomodation should be marked in green.
 
 ### Other features
 
 - The app should have a 'share' option to share the link to the app with someone via phone.
-- There should be a calendar view in a table format. It should start with the first flight as first column and end with the last returning flight as columns. Then it should have one row per user and visualize in the fields if the user is already there and not yet returned as well as the accomodation the user is staying. The users should be sorted by arrival time (first flight).
-- In the calendar view, when clicked on a user, it should open an overlay that shows the different contact options for the user, i.e., the mail adress with an icon to click on that has a mailto link, similar a phone and a whatsapp link and an instagram link.
