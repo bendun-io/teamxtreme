@@ -45,6 +45,22 @@
   white-space: nowrap;
 }
 
+.calendar-name-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+}
+
+.calendar-name-button:hover {
+  text-decoration-color: currentColor;
+}
+
 .calendar-cell {
   min-width: 3.4rem;
   color: var(--color-text);

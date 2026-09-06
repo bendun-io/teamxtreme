@@ -42,6 +42,7 @@ src/
                                                         # tables + their assignment tables, ahead
                                                         # of those features' routes/UI landing
       003_create_media.sql                             # media table for shared photos/videos
+      004_add_user_contact_fields.sql                  # users.phone, users.instagram_handle
     src/
       app.js                # builds and exports the Express app (routes, static hosting, SPA
                              # fallback) without calling .listen() — imported directly by index.js
@@ -75,8 +76,10 @@ src/
       routes/
         health.js           # GET /api/health
         auth.js              # login/logout/me, invites, register, google/instagram OAuth
-        users.js             # GET /api/users — minimal {id, name} directory for assign pickers
-        profile.js            # GET/PATCH /api/profile — name + profile picture upload (scanUpload.js)
+        users.js             # GET /api/users — directory (id, name, contact info) for assign
+                               # pickers and the Calendar contact overlay
+        profile.js            # GET/PATCH /api/profile — name, email, phone, Instagram handle,
+                                # and profile picture upload (scanUpload.js)
         flights.js           # flights CRUD, mounted behind requireAuth
         accommodations.js    # accommodations add + assign/accept, mounted behind requireAuth
         vehicles.js          # vehicles add + assign/accept, mounted behind requireAuth
@@ -99,6 +102,11 @@ src/
         RequireAuth.jsx      # route guards (RequireAuth, RequireAdmin); also renders BottomNav
         BottomNav.jsx         # fixed bottom nav, icon-only (Home/Reise/Unterkunft/Fahrzeuge/Profil/[Admin])
         auth.css
+      components/            # small UI pieces shared across pages
+        Modal.jsx             # generic centered/bottom-sheet overlay (backdrop click + Escape to
+                               # close); used by CalendarPage's contact overlay, reusable elsewhere
+        ContactLinks.jsx       # renders a user's mailto/tel/wa.me/instagram links from
+                                # {email, phone, instagramHandle}, skipping any that are unset
       pages/
         LoginPage.jsx
         InvitePage.jsx        # invite-acceptance: password signup or Google/Instagram
@@ -111,7 +119,8 @@ src/
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
         SettingsPage.jsx       # edit own name + profile picture ("Profil" in the bottom nav), logout
-        CalendarPage.jsx       # read-only presence/accommodation table, derived from flights + accommodations
+        CalendarPage.jsx       # read-only presence/accommodation table, derived from flights + accommodations;
+                                # clicking a row's name opens a Modal with that user's ContactLinks
         MediaPage.jsx           # upload + gallery of shared photos/videos
 ```
 
@@ -162,6 +171,27 @@ src/
   ID is already linked to a user — it does not auto-link by matching email,
   so a provider can't be added to an existing account after the fact without
   going through a new invite.
+
+## Contact info
+
+Per the spec, every user can add an email address, phone number and
+Instagram handle in their profile (`SettingsPage.jsx` /
+`PATCH /api/profile`) so other users can reach them — surfaced in the
+Calendar page's contact overlay (`components/Modal.jsx` +
+`components/ContactLinks.jsx`, opened by clicking a name in
+`CalendarPage.jsx`), which renders whichever of a mailto/tel/`wa.me`
+WhatsApp/Instagram link apply. `GET /api/users` returns all four fields for
+every user (not just `id`/`name` as before) so the Calendar page can build
+that overlay without a route per user.
+
+`email` is the same column used for password login (`users.email`), so
+editing it in the profile changes login credentials too — `routes/profile.js`
+blocks clearing it while the account still has a password set (would lock
+the user out) and rejects a value already used by another account, but
+otherwise treats it like any other profile field. `phone` and
+`instagramHandle` (`users.phone`/`users.instagram_handle`, added in
+migration `004_add_user_contact_fields.sql`) have no such constraint and can
+be cleared by submitting them empty.
 
 ## Media storage
 

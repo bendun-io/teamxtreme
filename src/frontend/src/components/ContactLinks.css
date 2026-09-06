@@ -1,0 +1,41 @@
+.contact-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  text-decoration: none;
+  background: var(--color-bg);
+}
+
+.contact-link:hover {
+  border-color: var(--color-primary);
+}
+
+.contact-link-icon {
+  display: flex;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.contact-link-label {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.contact-links-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}

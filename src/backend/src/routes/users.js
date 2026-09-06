@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/', asyncHandler(async (req, res) => {
   const users = await listUsers();
-  res.json({ users: users.map((u) => ({ id: u.id, name: u.name })) });
+  res.json({ users });
 }));
 
 export default router;

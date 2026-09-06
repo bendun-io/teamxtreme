@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { updateUser, publicUser } from '../db/users.js';
+import { updateUser, publicUser, findUserByEmail, userHasPasswordLogin } from '../db/users.js';
 import { uploadMiddleware, isAcceptedMediaFile } from '../utils/scanUpload.js';
 
 const uploadPicture = uploadMiddleware({
@@ -24,13 +24,37 @@ router.get('/', (req, res) => {
 });
 
 router.patch('/', uploadPicture, asyncHandler(async (req, res) => {
-  const { name } = req.body || {};
+  const { name, email, phone, instagramHandle } = req.body || {};
   if (name !== undefined && !name.trim()) {
     return res.status(400).json({ error: 'name must not be empty' });
   }
 
-  const profilePictureUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
-  const user = await updateUser(req.user.id, { name: name || undefined, profilePictureUrl });
+  const updates = {};
+  if (name !== undefined) updates.name = name.trim();
+  if (req.file) updates.profilePictureUrl = `/uploads/${req.file.filename}`;
+
+  if (email !== undefined) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      if (await userHasPasswordLogin(req.user.id)) {
+        return res.status(400).json({ error: 'email is required while password login is enabled' });
+      }
+      updates.email = null;
+    } else {
+      const existing = await findUserByEmail(trimmedEmail);
+      if (existing && existing.id !== req.user.id) {
+        return res.status(409).json({ error: 'email already in use' });
+      }
+      updates.email = trimmedEmail;
+    }
+  }
+
+  if (phone !== undefined) updates.phone = phone.trim() || null;
+  if (instagramHandle !== undefined) {
+    updates.instagramHandle = instagramHandle.trim().replace(/^@/, '') || null;
+  }
+
+  const user = await updateUser(req.user.id, updates);
   res.json({ user: publicUser(user) });
 }));
 

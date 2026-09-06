@@ -1,6 +1,6 @@
 import { pool } from './pool.js';
 
-const PUBLIC_COLUMNS = 'id, email, name, profile_picture_url, is_admin, created_at';
+const PUBLIC_COLUMNS = 'id, email, name, profile_picture_url, is_admin, phone, instagram_handle, created_at';
 
 export function publicUser(user) {
   return {
@@ -9,12 +9,22 @@ export function publicUser(user) {
     name: user.name,
     profilePictureUrl: user.profile_picture_url,
     isAdmin: user.is_admin,
+    phone: user.phone,
+    instagramHandle: user.instagram_handle,
   };
 }
 
 export async function listUsers() {
-  const { rows } = await pool.query('SELECT id, name FROM users ORDER BY name ASC');
-  return rows;
+  const { rows } = await pool.query(
+    'SELECT id, name, email, phone, instagram_handle FROM users ORDER BY name ASC'
+  );
+  return rows.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    instagramHandle: u.instagram_handle,
+  }));
 }
 
 export async function findUserById(id) {
@@ -25,6 +35,11 @@ export async function findUserById(id) {
 export async function findUserByEmail(email) {
   const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
   return rows[0] || null;
+}
+
+export async function userHasPasswordLogin(id) {
+  const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [id]);
+  return Boolean(rows[0]?.password_hash);
 }
 
 export async function findUserByProviderId(provider, providerId) {
@@ -50,14 +65,33 @@ export async function createUser({
   return rows[0];
 }
 
-export async function updateUser(id, { name, profilePictureUrl }) {
+const UPDATABLE_COLUMNS = {
+  name: 'name',
+  profilePictureUrl: 'profile_picture_url',
+  email: 'email',
+  phone: 'phone',
+  instagramHandle: 'instagram_handle',
+};
+
+// Only keys actually present in `fields` are written — this lets callers
+// distinguish "leave unchanged" (key absent) from "clear it" (key present,
+// value null), which a plain COALESCE-based update can't express for
+// nullable contact fields like phone/instagramHandle.
+export async function updateUser(id, fields) {
+  const sets = [];
+  const values = [];
+  for (const [key, column] of Object.entries(UPDATABLE_COLUMNS)) {
+    if (key in fields) {
+      sets.push(`${column} = $${sets.length + 1}`);
+      values.push(fields[key]);
+    }
+  }
+  if (sets.length === 0) return findUserById(id);
+
+  values.push(id);
   const { rows } = await pool.query(
-    `UPDATE users SET
-       name = COALESCE($1, name),
-       profile_picture_url = COALESCE($2, profile_picture_url)
-     WHERE id = $3
-     RETURNING ${PUBLIC_COLUMNS}`,
-    [name || null, profilePictureUrl || null, id]
+    `UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING ${PUBLIC_COLUMNS}`,
+    values
   );
   return rows[0] || null;
 }

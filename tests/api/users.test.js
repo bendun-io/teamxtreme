@@ -19,7 +19,7 @@ after(async () => {
   await closeDb();
 });
 
-test('GET /api/users requires auth and returns a minimal, name-sorted directory', async () => {
+test('GET /api/users requires auth and returns a name-sorted directory with contact info', async () => {
   const anonRes = await new ApiClient(baseUrl).get('/api/users');
   assert.equal(anonRes.status, 401);
 
@@ -30,5 +30,9 @@ test('GET /api/users requires auth and returns a minimal, name-sorted directory'
   assert.equal(res.status, 200);
   const names = res.body.users.map((u) => u.name);
   assert.deepEqual(names, [...names].sort());
-  assert.ok(res.body.users.every((u) => Object.keys(u).sort().join(',') === 'id,name'));
+  assert.ok(
+    res.body.users.every((u) => Object.keys(u).sort().join(',') === 'email,id,instagramHandle,name,phone')
+  );
+  const zed = res.body.users.find((u) => u.name === 'Zed');
+  assert.equal(zed.email, 'zz@test.local');
 });

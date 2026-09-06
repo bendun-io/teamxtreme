@@ -6,6 +6,9 @@ import './SettingsPage.css';
 function SettingsPage() {
   const { user, refresh, logout } = useAuth();
   const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [instagramHandle, setInstagramHandle] = useState(user?.instagramHandle || '');
   const [preview, setPreview] = useState(user?.profilePictureUrl || null);
   const [file, setFile] = useState(null);
   const [error, setError] = useState(null);
@@ -27,6 +30,9 @@ function SettingsPage() {
     try {
       const body = new FormData();
       body.append('name', name);
+      body.append('email', email);
+      body.append('phone', phone);
+      body.append('instagramHandle', instagramHandle);
       if (file) body.append('picture', file);
 
       const res = await fetch('/api/profile', {
@@ -35,7 +41,12 @@ function SettingsPage() {
         body,
       });
       if (!res.ok) {
-        setError('Profil konnte nicht gespeichert werden.');
+        const data = await res.json().catch(() => null);
+        setError(
+          data?.error === 'email already in use'
+            ? 'Diese E-Mail-Adresse wird bereits verwendet.'
+            : 'Profil konnte nicht gespeichert werden.'
+        );
         return;
       }
       await refresh();
@@ -71,6 +82,37 @@ function SettingsPage() {
               Name
               <input value={name} onChange={(e) => setName(e.target.value)} required />
             </label>
+            <label>
+              E-Mail-Adresse
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@beispiel.de"
+              />
+            </label>
+            <label>
+              Telefonnummer
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+49 151 23456789"
+              />
+            </label>
+            <label>
+              Instagram-Handle
+              <input
+                type="text"
+                value={instagramHandle}
+                onChange={(e) => setInstagramHandle(e.target.value)}
+                placeholder="@nutzername"
+              />
+            </label>
+            <p className="settings-hint">
+              Diese Angaben werden anderen Team-Mitgliedern in der Kalenderansicht als
+              Kontaktmöglichkeiten angezeigt.
+            </p>
             <button type="submit" disabled={submitting}>
               Speichern
             </button>

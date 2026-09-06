@@ -94,9 +94,11 @@ Only the owner may delete.
 ### Users
 
 #### `GET /api/users`
-Requires auth. Minimal directory used to populate "assign someone else"
-pickers.
-**200** `{ "users": [{ id, name }] }`, ordered by name.
+Requires auth. Directory of every user, used both to populate "assign
+someone else" pickers and to build the Calendar page's contact overlay.
+**200** `{ "users": [{ id, name, email, phone, instagramHandle }] }`,
+ordered by name — `email`, `phone` and `instagramHandle` are `null` when a
+user hasn't filled them in (see [Profile](#profile)).
 
 ### Accommodations
 All routes require auth. Anyone can create an accommodation and assign
@@ -157,16 +159,21 @@ way to edit anyone else's profile.
 **200** `{ "user": {...} }` — same shape as `/api/auth/me`.
 
 #### `PATCH /api/profile`
-Body: `multipart/form-data` with an optional `name` field and an optional
-`picture` file field (so a name-only update still posts as multipart).
+Body: `multipart/form-data` with any combination of `name`, `email`,
+`phone`, `instagramHandle` (all optional text fields) and an optional
+`picture` file field. Any field that's omitted entirely is left unchanged;
+`phone` and `instagramHandle` can be cleared by sending them as an empty
+string. `instagramHandle` is stored without a leading `@` if one is sent.
 Uploaded pictures are stored under the `uploads-data` Docker volume (see
 [Architecture.md](Architecture.md#media-storage)) and served back at
-`/uploads/<filename>`; only `name`, only `picture`, or both may be sent —
-whichever is omitted is left unchanged.
+`/uploads/<filename>`.
 **200** `{ "user": {...} }`
-**400** empty `name`, `picture` isn't an image / exceeds 5 MB, or it failed
-the malware scan (`{ "error": "file failed malware scan" }`) — see
+**400** empty `name`; `email` sent empty while the account still has a
+password set (would lock out password login); `picture` isn't an image /
+exceeds 5 MB, or it failed the malware scan
+(`{ "error": "file failed malware scan" }`) — see
 [Architecture.md](Architecture.md#malware-scanning).
+**409** `email` already belongs to another account.
 
 ### Media
 

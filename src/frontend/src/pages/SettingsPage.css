@@ -31,6 +31,8 @@
 }
 
 .settings-form input[type='text'],
+.settings-form input[type='email'],
+.settings-form input[type='tel'],
 .settings-form input:not([type]) {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -62,6 +64,12 @@
 .settings-saved {
   color: var(--color-success-text);
   font-size: 0.9rem;
+}
+
+.settings-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .settings-logout {

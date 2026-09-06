@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Modal from '../components/Modal.jsx';
+import ContactLinks from '../components/ContactLinks.jsx';
 import './CalendarPage.css';
 
 function pad(n) {
@@ -84,16 +86,23 @@ function stayForDay(stays, dayKey) {
 function CalendarPage() {
   const [flights, setFlights] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
+  const [usersById, setUsersById] = useState({});
   const [loading, setLoading] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     async function load() {
-      const [flightsRes, accommodationsRes] = await Promise.all([
+      const [flightsRes, accommodationsRes, usersRes] = await Promise.all([
         fetch('/api/flights', { credentials: 'include' }),
         fetch('/api/accommodations', { credentials: 'include' }),
+        fetch('/api/users', { credentials: 'include' }),
       ]);
       if (flightsRes.ok) setFlights((await flightsRes.json()).flights);
       if (accommodationsRes.ok) setAccommodations((await accommodationsRes.json()).accommodations);
+      if (usersRes.ok) {
+        const { users } = await usersRes.json();
+        setUsersById(Object.fromEntries(users.map((u) => [u.id, u])));
+      }
       setLoading(false);
     }
     load();
@@ -147,7 +156,13 @@ function CalendarPage() {
                   {rows.map((row) => (
                     <tr key={row.userId}>
                       <th className="calendar-name-col" scope="row">
-                        {row.userName}
+                        <button
+                          type="button"
+                          className="calendar-name-button"
+                          onClick={() => setSelectedUserId(row.userId)}
+                        >
+                          {row.userName}
+                        </button>
                       </th>
                       {days.map((day) => {
                         const present = day >= row.startKey && (!row.endKey || day <= row.endKey);
@@ -175,6 +190,11 @@ function CalendarPage() {
           </p>
         </section>
       </main>
+      {selectedUserId && (
+        <Modal title={usersById[selectedUserId]?.name || 'Kontakt'} onClose={() => setSelectedUserId(null)}>
+          <ContactLinks user={usersById[selectedUserId]} />
+        </Modal>
+      )}
     </div>
   );
 }

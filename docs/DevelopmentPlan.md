@@ -208,6 +208,29 @@ it's the source of truth for "what's next," not a fixed roadmap.
   `application/octet-stream` MIME type to confirm the extension fallback
   accepts it. See [Architecture.md](Architecture.md#malware-scanning).
 
+- **Profile contact fields + Calendar contact overlay** — the spec asked for
+  two related things that a prior "everything's done" pass had missed: (1)
+  users can add an email, phone number and Instagram handle to their
+  profile "in order to be contacted by other users", and (2) clicking a
+  user in the Calendar view opens an overlay with mailto/phone/WhatsApp/
+  Instagram links for them. Built together since the overlay has nothing to
+  show without the fields existing. Backend: migration
+  `004_add_user_contact_fields.sql` adds `users.phone`/
+  `users.instagram_handle`; `PATCH /api/profile` now also accepts `email`,
+  `phone`, `instagramHandle` (any omitted field is left unchanged; `phone`/
+  `instagramHandle` can be cleared with an empty string — `email` cannot be
+  cleared while the account still has a password set, since it doubles as
+  the login credential; a duplicate `email` is rejected with 409); `GET
+  /api/users` now returns all four contact fields per user instead of just
+  `id`/`name`. Frontend: `SettingsPage.jsx` gained the three new fields;
+  new reusable `components/Modal.jsx` (generic overlay, closes on backdrop
+  click or Escape) and `components/ContactLinks.jsx` (renders whichever
+  mailto/tel/`wa.me`/Instagram links apply, given a user's contact fields)
+  are wired into `CalendarPage.jsx` — clicking a row's name now opens the
+  modal for that user. See [API.md](API.md#profile),
+  [API.md](API.md#users) and
+  [Architecture.md](Architecture.md#contact-info) for details.
+
 ## Next unfinished item
 
 None outstanding from `docs/Spec.md` — every listed feature has an

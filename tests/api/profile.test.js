@@ -83,6 +83,57 @@ test('PATCH /api/profile uploads a picture and rejects non-image files', async (
   assert.equal(textRes.status, 400);
 });
 
+test('PATCH /api/profile updates phone and Instagram handle, and clears them again', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile6@test.local',
+    password: 'pw123456',
+    name: 'Contact Person',
+  });
+
+  const form = new FormData();
+  form.set('phone', '+49 151 23456789');
+  form.set('instagramHandle', '@teamxtreme');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.user.phone, '+49 151 23456789');
+  assert.equal(res.body.user.instagramHandle, 'teamxtreme');
+
+  const clearForm = new FormData();
+  clearForm.set('phone', '');
+  clearForm.set('instagramHandle', '');
+  const clearRes = await client.patch('/api/profile', undefined, { formData: clearForm });
+  assert.equal(clearRes.status, 200);
+  assert.equal(clearRes.body.user.phone, null);
+  assert.equal(clearRes.body.user.instagramHandle, null);
+});
+
+test('PATCH /api/profile refuses to clear the email of a password-login account', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile7@test.local',
+    password: 'pw123456',
+    name: 'Password User',
+  });
+
+  const form = new FormData();
+  form.set('email', '');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 400);
+});
+
+test('PATCH /api/profile rejects an email already used by another account', async () => {
+  await loginAsNewUser(baseUrl, { email: 'taken@test.local', password: 'pw123456', name: 'First' });
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile8@test.local',
+    password: 'pw123456',
+    name: 'Second',
+  });
+
+  const form = new FormData();
+  form.set('email', 'taken@test.local');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 409);
+});
+
 test('PATCH /api/profile accepts a picture whose browser omitted the MIME type, based on its extension', async () => {
   // Mirrors the same real-world mobile-browser quirk covered in
   // tests/api/media.test.js.
