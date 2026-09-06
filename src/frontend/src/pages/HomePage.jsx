@@ -39,7 +39,7 @@ function HomePage() {
   return (
     <div className="page">
       <header className="hero">
-        <img src="/header.png" alt="Titelbild" className="hero-image" />
+        <img src="/header.svg" alt="Titelbild" className="hero-image" />
         <h1 className="hero-title">TeamXtreme</h1>
         <button
           type="button"

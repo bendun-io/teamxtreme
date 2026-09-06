@@ -54,6 +54,12 @@ function AdminInvitesPage() {
     }
   }
 
+  function mailtoLink(invite) {
+    const subject = 'Einladung zu TeamXtreme';
+    const body = `Hallo ${invite.inviteeName},\n\ndu wurdest zu TeamXtreme eingeladen. Über folgenden Link kannst du dich anmelden:\n${invite.url}`;
+    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
   return (
     <div className="page">
       <main className="card-list">
@@ -90,9 +96,12 @@ function AdminInvitesPage() {
                       angenommen von {invite.usedByName}
                     </span>
                   ) : (
-                    <button type="button" onClick={() => copyLink(invite)}>
-                      {copiedId === invite.id ? 'Kopiert!' : 'Link kopieren'}
-                    </button>
+                    <div className="invite-actions">
+                      <button type="button" onClick={() => copyLink(invite)}>
+                        {copiedId === invite.id ? 'Kopiert!' : 'Link kopieren'}
+                      </button>
+                      <a href={mailtoLink(invite)}>E-Mail senden</a>
+                    </div>
                   )}
                 </div>
               </li>

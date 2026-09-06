@@ -86,8 +86,11 @@ src/
     vite.config.js         # includes vite-plugin-pwa (manifest + service worker)
     index.html
     public/
-      icons/                # PWA icons (currently placeholders — swap for real branding)
-      header.png            # homepage header image (placeholder)
+      icons/                # PWA icons — the real Team Xtreme BJJ Karlsruhe club logo
+      header.svg            # homepage hero banner — a designed graphic in brand colors
+                             # with a belt-knot emblem; swap for a real team photo if/when
+                             # one becomes available (any image format works, .hero-image
+                             # in App.css just does object-fit: cover)
     src/
       main.jsx              # BrowserRouter + AuthProvider + App
       App.jsx               # route table
@@ -99,7 +102,8 @@ src/
       pages/
         LoginPage.jsx
         InvitePage.jsx        # invite-acceptance: password signup or Google/Instagram
-        AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links
+        AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links,
+                                # or send them via a mailto: link
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list);
                                 # also the app-wide "share" button (Web Share API, clipboard
                                 # fallback) overlaid on the header image
@@ -213,8 +217,8 @@ container start/restart — just incremental updates.
 - The homepage (`pages/HomePage.jsx`) is fully hardcoded per spec: header image, training
   times/location card, travel info card (nearest airport: Málaga/AGP), and a
   packing recommendation list. The training times/location card has real
-  content; `public/header.png` is still a placeholder — replace it with real
-  branding/a team photo.
+  content; `public/header.svg` is a designed brand-colored banner (not an
+  actual team photo) — swap it for a real photo whenever one is available.
 
 ## Local development
 

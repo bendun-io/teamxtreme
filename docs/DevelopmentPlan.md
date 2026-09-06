@@ -155,22 +155,31 @@ it's the source of truth for "what's next," not a fixed roadmap.
   [API.md](API.md#media) and
   [Architecture.md](Architecture.md#malware-scanning) for details.
 
-### Not started
-Roughly in build order — earlier items unblock later ones:
+- **Invite "Send E-Mail" button** — spec addition: alongside the existing
+  copy-link button on `AdminInvitesPage.jsx`, each unused invite now also
+  shows an "E-Mail senden" link next to "Link kopieren", rendered as a plain
+  `mailto:?subject=...&body=...` anchor (styled to match the existing
+  buttons) pre-filled with a German greeting using the invitee's name and
+  the invite URL — opens the admin's own mail client instead of only
+  copy/pasting the link elsewhere. No backend changes.
 
-1. **Invite "Send E-Mail" button** — spec addition: alongside the existing
-   copy-link button on `AdminInvitesPage.jsx`, add a button that opens a
-   `mailto:` link pre-filled with the invite URL, so an admin can hand off
-   sending the invite to their own mail client instead of only copy/pasting
-   the link elsewhere.
-2. **PWA polish** — replace the placeholder icons
-   (`src/frontend/public/icons/`) and header image
-   (`src/frontend/public/header.png`) with real branding/team photo. The
-   homepage's training-times/location text has since been filled in with
-   real content (`pages/HomePage.jsx`), so this item is now just images.
+- **PWA polish** — the placeholder PWA icons
+  (`src/frontend/public/icons/`, `favicon-*.png`, `apple-touch-icon.png`)
+  were already replaced with the real Team Xtreme BJJ Karlsruhe club logo
+  outside of a tracked feature item. The homepage header image
+  (`src/frontend/public/header.png`, a plain "Titelbild" text placeholder)
+  is now `header.svg`: a vector banner in the app's brand colors
+  (`--color-primary` maroon fading into near-black) with diagonal
+  belt-stripe accents and a simplified belt-knot emblem echoing the club
+  logo, referenced from `pages/HomePage.jsx`'s `.hero-image`. This is a
+  designed graphic rather than an actual team photo (none was available to
+  the assistant) — swap in a real header photo whenever one exists, no
+  other changes needed since the `<img>` markup and `.hero-image` CSS
+  (`object-fit: cover`) don't care about the source format.
 
 ## Next unfinished item
 
-**Invite "Send E-Mail" button** (item 1 above) — the smallest remaining
-piece from the spec's User Management section. After that, PWA icon polish
-(item 2) is the only other open item.
+None outstanding from `docs/Spec.md` — every listed feature has an
+end-to-end implementation. Remaining work is polish/content, at the
+user's discretion: swapping `header.svg` for a real team photo if/when one
+is available, and any spec additions that come up as the trip gets closer.
