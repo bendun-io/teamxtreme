@@ -1,0 +1,135 @@
+.flight-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.flight-form-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.flight-form-row > input,
+.flight-form-row > label {
+  flex: 1;
+  min-width: 0;
+}
+
+.flight-form input,
+.flight-form textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  color: #f1f5f9;
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.flight-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.flight-form textarea {
+  resize: vertical;
+  min-height: 3rem;
+}
+
+.flight-form-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.flight-form button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.flight-form-cancel {
+  background: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+.flight-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flight-item {
+  border-top: 1px solid #334155;
+  padding-top: 0.75rem;
+}
+
+.flight-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.flight-item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.flight-route {
+  font-weight: 600;
+}
+
+.flight-meta {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.flight-item-times {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin-top: 0.2rem;
+}
+
+.flight-notes {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.flight-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.4rem;
+}
+
+.flight-owner {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.flight-item-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.flight-item-actions button {
+  background: none;
+  border: none;
+  color: #38bdf8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}

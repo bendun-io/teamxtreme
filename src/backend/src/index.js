@@ -5,8 +5,10 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
+import flightsRouter from './routes/flights.js';
 import { runMigrations } from './db/migrate.js';
 import { bootstrapAdmin } from './db/bootstrapAdmin.js';
+import { requireAuth } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, '..', 'public');
@@ -20,6 +22,7 @@ app.use(cookieParser());
 
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/flights', requireAuth, flightsRouter);
 
 app.use(express.static(publicDir));
 

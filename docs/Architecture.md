@@ -29,6 +29,9 @@ src/
     package.json
     migrations/            # hand-rolled, numbered SQL files, applied in order at startup
       001_create_users_and_invites.sql
+      002_create_flights_accommodations_vehicles.sql  # also creates accommodations/vehicles
+                                                        # tables + their assignment tables, ahead
+                                                        # of those features' routes/UI landing
     src/
       index.js             # app entry: runs migrations, static hosting, SPA fallback, mounts routers
       db/
@@ -36,6 +39,7 @@ src/
         migrate.js           # applies pending migrations/*.sql, tracked in schema_migrations
         bootstrapAdmin.js    # creates the first admin from ADMIN_EMAIL/PASSWORD on an empty DB
         users.js             # user queries
+        flights.js           # flight queries
       utils/
         jwt.js               # session cookie + OAuth "state" JWT helpers
         asyncHandler.js       # forwards rejected promises from async route handlers to Express
@@ -46,6 +50,7 @@ src/
       routes/
         health.js           # GET /api/health
         auth.js              # login/logout/me, invites, register, google/instagram OAuth
+        flights.js           # flights CRUD, mounted behind requireAuth
   frontend/               # React PWA (Vite)
     package.json
     vite.config.js         # includes vite-plugin-pwa (manifest + service worker)
@@ -65,6 +70,7 @@ src/
         InvitePage.jsx        # invite-acceptance: password signup or Google/Instagram
         AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list)
+        FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
 ```
 
 ## Backend

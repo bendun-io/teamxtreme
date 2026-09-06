@@ -66,29 +66,53 @@ the account, and sets the session cookie.
 **201** `{ "user": {...} }`
 **404** invite not found/used. **409** email already in use.
 
-### Profile
+### Flights
+All routes require auth (`requireAuth` on the whole router). A flight belongs
+to the user who created it (`userId`/`userName` in every response); only that
+user can edit or delete it.
+
+#### `GET /api/flights`
+Overview of everyone's flights, ordered by `departureTime` ascending.
+**200** `{ "flights": [{ id, userId, userName, airline, flightNumber, departureAirport, arrivalAirport, departureTime, arrivalTime, notes, createdAt, updatedAt }] }`
+
+#### `POST /api/flights`
+Body: `{ airline?, flightNumber?, departureAirport, arrivalAirport, departureTime, arrivalTime?, notes? }`.
+Creates a flight owned by the caller.
+**201** `{ "flight": {...} }`
+**400** if `departureAirport`, `arrivalAirport` or `departureTime` is missing.
+
+#### `PATCH /api/flights/:id`
+Body: same shape as `POST` (full replace, not a partial patch — the frontend
+edit form always sends every field). Only the owner may edit.
+**200** `{ "flight": {...} }`
+**400** missing required field. **403** not the owner. **404** not found.
+
+#### `DELETE /api/flights/:id`
+Only the owner may delete.
+**204**, no body. **403** not the owner. **404** not found.
+
+### Planned
+
+Not implemented yet — see [DevelopmentPlan.md](DevelopmentPlan.md) for build
+order.
+
+#### Profile
 - `GET /api/profile`
 - `PATCH /api/profile` — name, profile picture.
 
-### Flights
-- `GET /api/flights` — overview of everyone's flights.
-- `POST /api/flights`
-- `PATCH /api/flights/:id`
-- `DELETE /api/flights/:id`
-
-### Accommodations
+#### Accommodations
 - `GET /api/accommodations`
 - `POST /api/accommodations` — location, start date, end date, extra info.
 - `POST /api/accommodations/:id/assign` — assign self, or assign someone else.
 - `POST /api/accommodations/:id/assignments/:assignmentId/accept` — accept an
   assignment someone else created.
 
-### Vehicles
+#### Vehicles
 - `GET /api/vehicles`
 - `POST /api/vehicles` — capacity (seats), details.
 - `POST /api/vehicles/:id/assign` / accept, mirroring accommodations.
 
-### Media sharing
+#### Media sharing
 - `POST /api/media` — upload (original quality — storage strategy is an open
   decision, see DevelopmentPlan.md).
 - `GET /api/media` — list/gallery.
