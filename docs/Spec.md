@@ -38,3 +38,12 @@ The app should be used for the team to organize travel together in a better way 
 - The starting page should contain a list of cards below each other with general information. This can be hardcoded. It should start with a header picture, then there should be the list of training times and the location where is trained. Then traveling information (nearest Airport is Malaga). Finally a recommendation on what to pack for the travel.
 - There should be a navigation on the bottom (mobile first view). This navigation should have the buttons "Home", "Travel", "Accommodation", "Vehicles", "Settings" and if the user is an admin "Admin". Home should show that starting page, travel should show the flights, and so on. Settings should go to the profile settings of the user. Admin is for now the invites page.
 - There should be a calendar view in a table format. It should start with the first flight as first column and end with the last returning flight as columns. Then it should have one row per user and visualize in the fields if the user is already there and not yet returned as well as the accomodation the user is staying. The users should be sorted by arrival time (first flight).
+
+## Security
+
+- File uploads should run through a malware scan (ClamAV sidecar) before they are stored in an accessible manner.
+
+## Test cases
+
+- There should be a folder /tests that contains testcases that can be run locally to test all functionality and APIs. 
+- There should also be specifically security tests, i.e., non users trying to get or modify operations or non admin users to do tasks that only admins should be able to.

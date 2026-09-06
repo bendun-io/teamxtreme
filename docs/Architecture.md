@@ -84,6 +84,7 @@ src/
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
         SettingsPage.jsx       # edit own name + profile picture ("Profil" in the bottom nav), logout
+        CalendarPage.jsx       # read-only presence/accommodation table, derived from flights + accommodations
 ```
 
 ## Backend

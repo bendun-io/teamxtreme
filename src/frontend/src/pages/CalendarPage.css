@@ -1,0 +1,86 @@
+.calendar-scroll {
+  overflow-x: auto;
+  margin-top: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.calendar-table {
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.calendar-table th,
+.calendar-table td {
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.4rem;
+  text-align: center;
+}
+
+.calendar-table thead th {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.calendar-day-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.calendar-weekday {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.calendar-name-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.calendar-cell {
+  min-width: 3.4rem;
+  color: var(--color-text);
+  font-size: 0.75rem;
+}
+
+.calendar-cell--absent {
+  background: var(--color-surface);
+}
+
+.calendar-cell--present {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.calendar-cell--stay-accepted {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-weight: 600;
+}
+
+.calendar-cell--stay-pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-style: italic;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.calendar-legend-item {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}

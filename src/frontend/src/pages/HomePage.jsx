@@ -43,6 +43,8 @@ function HomePage() {
           <Link to="/accommodations">Unterkünfte ansehen / eintragen →</Link>
           <br />
           <Link to="/vehicles">Fahrzeuge ansehen / eintragen →</Link>
+          <br />
+          <Link to="/calendar">Kalender ansehen →</Link>
         </section>
 
         <section className="card">

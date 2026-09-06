@@ -75,30 +75,56 @@ it's the source of truth for "what's next," not a fixed roadmap.
   / the Settings page respectively, since the nav has no logout slot of its
   own.
 
+- **Calendar view** — a read-only table with one column per day, spanning
+  from the earliest flight's arrival to the latest flight's departure (or,
+  for a user with no logged return flight, treated as still present through
+  the end of that range — "not yet returned"), and one row per user with
+  flights, sorted by their first flight's arrival time. Computed entirely
+  client-side from the existing `GET /api/flights` and
+  `GET /api/accommodations` responses — no new backend routes or data model.
+  A cell shows the accommodation location the user is assigned to that day
+  (styled differently for `accepted` vs. `pending`, reusing the status
+  wording from Accommodations/Vehicles) or a plain "✓" if present with no
+  accommodation on file yet. Frontend: `CalendarPage.jsx` +
+  `CalendarPage.css` (a horizontally-scrollable table with a sticky
+  name column, since the day range can exceed mobile screen width), linked
+  from the homepage's travel info card as `/calendar`.
+
 ### Not started
 Roughly in build order — earlier items unblock later ones:
 
-1. **Calendar view** — a table with one column per day from the first
-   outbound flight to the last return flight and one row per user (sorted by
-   arrival time), showing per user/day whether they're present (between
-   their own flights) and which accommodation they're staying at. Another
-   spec addition; purely a read view over already-existing flights +
-   accommodations data, no new data model needed.
-2. **Share option** — share the app link via the device's native share sheet
+1. **Share option** — share the app link via the device's native share sheet
    (Web Share API), falling back to copy-link. (`AdminInvitesPage` already
    has a "copy link" button for invites specifically — this item is the
    general "share the app" button from the spec.)
-3. **Media sharing** — images/videos in original quality, shared between
+2. **Media sharing** — images/videos in original quality, shared between
    users. The storage mechanism is now precedented by profile pictures (a
    Docker volume, served via `express.static`, random-UUID filenames) — this
    item is mainly the gallery/list UI and an upload flow that preserves
    original quality (no resizing), rather than a new infra decision.
-4. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
+3. **Upload malware scanning** — spec addition: file uploads (currently
+   profile pictures; media sharing above will add more) must be scanned
+   before being stored in an accessible way. No scanner is wired up yet.
+   Likely shape: a ClamAV sidecar container (`clamd`) added to
+   `docker-compose.yml`, with the upload route streaming the file to it
+   (e.g. via `clamscan`/`clamdscan` over the socket) before writing it to
+   the `uploads-data` volume — an infra decision worth confirming before
+   building, since it adds a new service to the compose stack.
+4. **Test suite** — spec addition: a `/tests` folder with tests runnable
+   locally against the API, plus dedicated security tests (unauthenticated
+   callers hitting authenticated routes, non-admins hitting admin-only
+   routes like `/api/auth/invites`). No test tooling (runner, HTTP client)
+   is chosen yet.
+5. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
    and header image (`src/frontend/public/header.png`) with real branding/
    team photo; fill in the real training times/location on the homepage
    (currently a placeholder string in `pages/HomePage.jsx`).
 
 ## Next unfinished item
 
-**Calendar view** (item 1 above) — the table-format presence/accommodation
-overview described in the spec's newest bullet.
+**Share option** (item 1 above) — the general "share this app" button via
+the Web Share API. Note two other spec additions just landed (see items 3
+and 4) that are worth confirming direction on before building: upload
+malware scanning needs an infra decision (ClamAV sidecar vs. another
+approach), and the test suite needs a runner/tooling choice — both are
+independent of the build-order above and could be picked up any time.
