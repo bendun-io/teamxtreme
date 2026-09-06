@@ -45,6 +45,10 @@ function HomePage() {
             Nächstgelegener Flughafen: <strong>Málaga (AGP)</strong>
           </p>
           <Link to="/flights">Flüge ansehen / eintragen →</Link>
+          <br />
+          <Link to="/accommodations">Unterkünfte ansehen / eintragen →</Link>
+          <br />
+          <Link to="/vehicles">Fahrzeuge ansehen / eintragen →</Link>
         </section>
 
         <section className="card">

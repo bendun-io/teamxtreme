@@ -91,6 +91,64 @@ edit form always sends every field). Only the owner may edit.
 Only the owner may delete.
 **204**, no body. **403** not the owner. **404** not found.
 
+### Users
+
+#### `GET /api/users`
+Requires auth. Minimal directory used to populate "assign someone else"
+pickers.
+**200** `{ "users": [{ id, name }] }`, ordered by name.
+
+### Accommodations
+All routes require auth. Anyone can create an accommodation and assign
+anyone (self or another user) to it; only the assigned user can accept a
+pending assignment.
+
+#### `GET /api/accommodations`
+Overview of all accommodations with their assignments, ordered by
+`startDate` ascending.
+**200** `{ "accommodations": [{ id, createdBy, createdByName, location, startDate, endDate, notes, createdAt, assignments: [{ id, userId, userName, assignedById, assignedByName, status, createdAt }] }] }`
+— `status` is `"pending"` or `"accepted"`.
+
+#### `POST /api/accommodations`
+Body: `{ location, startDate, endDate, notes? }` (`startDate`/`endDate` are
+`YYYY-MM-DD`). Creates an accommodation owned by the caller.
+**201** `{ "accommodation": {...} }`
+**400** if `location`, `startDate` or `endDate` is missing.
+
+#### `POST /api/accommodations/:id/assign`
+Body: `{ userId? }`. Omit `userId` to assign yourself (created already
+`accepted`); pass another user's id to assign them (created `pending` until
+they accept).
+**201** `{ "accommodation": {...} }` (with the new assignment included).
+**404** accommodation not found. **409** that user is already assigned.
+
+#### `POST /api/accommodations/:id/assignments/:assignmentId/accept`
+Accepts a pending assignment. Only the assigned user may accept it.
+**200** `{ "accommodation": {...} }`
+**403** not your assignment. **404** assignment not found.
+
+### Vehicles
+Same shape as Accommodations, with `seats` (capacity) and `details` instead
+of location/dates.
+
+#### `GET /api/vehicles`
+**200** `{ "vehicles": [{ id, createdBy, createdByName, seats, details, createdAt, assignments: [...] }] }`, ordered by `createdAt` ascending.
+
+#### `POST /api/vehicles`
+Body: `{ seats, details? }`.
+**201** `{ "vehicle": {...} }`
+**400** if `seats` is missing or not a positive number.
+
+#### `POST /api/vehicles/:id/assign`
+Body: `{ userId? }` — mirrors accommodations' assign endpoint.
+**201** `{ "vehicle": {...} }`
+**404** vehicle not found. **409** that user is already assigned.
+
+#### `POST /api/vehicles/:id/assignments/:assignmentId/accept`
+Mirrors accommodations' accept endpoint.
+**200** `{ "vehicle": {...} }`
+**403** not your assignment. **404** assignment not found.
+
 ### Planned
 
 Not implemented yet — see [DevelopmentPlan.md](DevelopmentPlan.md) for build
@@ -99,18 +157,6 @@ order.
 #### Profile
 - `GET /api/profile`
 - `PATCH /api/profile` — name, profile picture.
-
-#### Accommodations
-- `GET /api/accommodations`
-- `POST /api/accommodations` — location, start date, end date, extra info.
-- `POST /api/accommodations/:id/assign` — assign self, or assign someone else.
-- `POST /api/accommodations/:id/assignments/:assignmentId/accept` — accept an
-  assignment someone else created.
-
-#### Vehicles
-- `GET /api/vehicles`
-- `POST /api/vehicles` — capacity (seats), details.
-- `POST /api/vehicles/:id/assign` / accept, mirroring accommodations.
 
 #### Media sharing
 - `POST /api/media` — upload (original quality — storage strategy is an open

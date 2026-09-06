@@ -36,33 +36,40 @@ it's the source of truth for "what's next," not a fixed roadmap.
   (add/edit form + list of everyone's flights, sorted by departure time),
   linked from the homepage's travel info card. See
   [API.md](API.md#flights) for details.
+- **Accommodations** and **Vehicles** — add, assign self/others, accept
+  assignment, end to end (API + UI), built together since they share the
+  same shape. `GET/POST /api/accommodations`, `GET/POST /api/vehicles`,
+  plus `POST .../:id/assign` and `POST .../:id/assignments/:assignmentId/accept`
+  on both, mounted behind `requireAuth`. A self-assign is inserted already
+  `accepted`; assigning someone else is inserted `pending` until that user
+  accepts it — only they can accept it. Also added `GET /api/users` (a
+  minimal `{id, name}` directory) to populate the "assign someone else"
+  picker on both pages. Frontend: `AccommodationsPage.jsx` and
+  `VehiclesPage.jsx` (shared `AssignableList.css`) — add form, list with
+  per-assignment status badges, "Mir zuweisen" / assign-another-person /
+  "Annehmen" controls — linked from the homepage's travel info card. See
+  [API.md](API.md#accommodations) for details. `accommodations.start_date`/
+  `end_date` are Postgres `DATE` columns; `db/pool.js` overrides pg's
+  default `DATE` type parser to keep them as plain `YYYY-MM-DD` strings
+  instead of JS `Date` objects, which avoids a timezone-dependent
+  off-by-one-day bug when they round-trip through JSON.
 
 ### Not started
 Roughly in build order — earlier items unblock later ones:
 
-1. **Accommodations** — add, assign self/others, accept assignment. Data
-   model already exists (`accommodations`, `accommodation_assignments`); a
-   self-assign should presumably insert the assignment as already
-   `accepted` (no accept step needed for your own choice), while assigning
-   someone else stays `pending` until they accept — mirrors the `status`
-   column added in migration 002.
-2. **Vehicles** — add with capacity, assign/accept (mirrors accommodations
-   both in data model and flow — build it right after so the pattern is
-   still fresh, or generalize the two together if that turns out cleaner
-   than copy-pasting).
-3. **Profile management** — name + profile picture; prefill picture from
+1. **Profile management** — name + profile picture; prefill picture from
    social login when available (Google/Instagram profile pictures aren't
    pulled in yet — `profile_picture_url` is only ever set from the OAuth
    provider payload's `picture`/`profile_picture_url` field, which is `null`
    for password-only accounts until this lands).
-4. **Share option** — share the app link via the device's native share sheet
+2. **Share option** — share the app link via the device's native share sheet
    (Web Share API), falling back to copy-link. (`AdminInvitesPage` already
    has a "copy link" button for invites specifically — this item is the
    general "share the app" button from the spec.)
-5. **Media sharing** — images/videos in original quality. Needs a storage
+3. **Media sharing** — images/videos in original quality. Needs a storage
    decision (local Docker volume vs. an object store) since "original
    quality" likely means large files that shouldn't live in Postgres.
-6. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
+4. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
    and header image (`src/frontend/public/header.png`) with real branding/
    team photo; fill in the real training times/location on the homepage
    (currently a placeholder string in `pages/HomePage.jsx`).
@@ -75,6 +82,5 @@ Roughly in build order — earlier items unblock later ones:
 
 ## Next unfinished item
 
-**Accommodations** (item 1 above) — the data model already exists from
-migration 002, and it's the natural template for Vehicles (item 2) right
-after, since the two share the same add/assign/accept shape.
+**Profile management** (item 1 above) — name + profile picture, including
+prefilling the picture from Google/Instagram when the account has one.

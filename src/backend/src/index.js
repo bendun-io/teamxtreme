@@ -6,6 +6,9 @@ import cookieParser from 'cookie-parser';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import flightsRouter from './routes/flights.js';
+import accommodationsRouter from './routes/accommodations.js';
+import vehiclesRouter from './routes/vehicles.js';
+import usersRouter from './routes/users.js';
 import { runMigrations } from './db/migrate.js';
 import { bootstrapAdmin } from './db/bootstrapAdmin.js';
 import { requireAuth } from './middleware/auth.js';
@@ -23,6 +26,9 @@ app.use(cookieParser());
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/flights', requireAuth, flightsRouter);
+app.use('/api/accommodations', requireAuth, accommodationsRouter);
+app.use('/api/vehicles', requireAuth, vehiclesRouter);
+app.use('/api/users', requireAuth, usersRouter);
 
 app.use(express.static(publicDir));
 

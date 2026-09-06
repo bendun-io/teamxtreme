@@ -35,11 +35,15 @@ src/
     src/
       index.js             # app entry: runs migrations, static hosting, SPA fallback, mounts routers
       db/
-        pool.js              # pg Pool (POSTGRES_* env vars)
+        pool.js              # pg Pool (POSTGRES_* env vars); overrides pg's DATE type parser
+                              # to keep DATE columns as plain 'YYYY-MM-DD' strings (avoids a
+                              # timezone-dependent off-by-one-day bug on JSON round-trip)
         migrate.js           # applies pending migrations/*.sql, tracked in schema_migrations
         bootstrapAdmin.js    # creates the first admin from ADMIN_EMAIL/PASSWORD on an empty DB
         users.js             # user queries
         flights.js           # flight queries
+        accommodations.js    # accommodation + accommodation_assignment queries
+        vehicles.js          # vehicle + vehicle_assignment queries
       utils/
         jwt.js               # session cookie + OAuth "state" JWT helpers
         asyncHandler.js       # forwards rejected promises from async route handlers to Express
@@ -50,7 +54,10 @@ src/
       routes/
         health.js           # GET /api/health
         auth.js              # login/logout/me, invites, register, google/instagram OAuth
+        users.js             # GET /api/users — minimal {id, name} directory for assign pickers
         flights.js           # flights CRUD, mounted behind requireAuth
+        accommodations.js    # accommodations add + assign/accept, mounted behind requireAuth
+        vehicles.js          # vehicles add + assign/accept, mounted behind requireAuth
   frontend/               # React PWA (Vite)
     package.json
     vite.config.js         # includes vite-plugin-pwa (manifest + service worker)
@@ -71,6 +78,8 @@ src/
         AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list)
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
+        AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
+        VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
 ```
 
 ## Backend

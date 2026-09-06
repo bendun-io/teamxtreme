@@ -5,6 +5,8 @@ import InvitePage from './pages/InvitePage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AdminInvitesPage from './pages/AdminInvitesPage.jsx';
 import FlightsPage from './pages/FlightsPage.jsx';
+import AccommodationsPage from './pages/AccommodationsPage.jsx';
+import VehiclesPage from './pages/VehiclesPage.jsx';
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/flights" element={<FlightsPage />} />
+        <Route path="/accommodations" element={<AccommodationsPage />} />
+        <Route path="/vehicles" element={<VehiclesPage />} />
       </Route>
 
       <Route element={<RequireAdmin />}>

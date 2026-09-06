@@ -2,6 +2,11 @@ import { pool } from './pool.js';
 
 const PUBLIC_COLUMNS = 'id, email, name, profile_picture_url, is_admin, created_at';
 
+export async function listUsers() {
+  const { rows } = await pool.query('SELECT id, name FROM users ORDER BY name ASC');
+  return rows;
+}
+
 export async function findUserById(id) {
   const { rows } = await pool.query(`SELECT ${PUBLIC_COLUMNS} FROM users WHERE id = $1`, [id]);
   return rows[0] || null;

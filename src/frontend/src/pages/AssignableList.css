@@ -1,0 +1,158 @@
+.assignable-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.assignable-form-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.assignable-form-row > label {
+  flex: 1;
+  min-width: 0;
+}
+
+.assignable-form input,
+.assignable-form textarea,
+.assign-other select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  color: #f1f5f9;
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.assignable-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.assignable-form textarea {
+  resize: vertical;
+  min-height: 3rem;
+}
+
+.assignable-form button,
+.assignable-actions button,
+.assignment-row button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.assignable-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.assignable-item {
+  border-top: 1px solid #334155;
+  padding-top: 0.9rem;
+}
+
+.assignable-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.assignable-item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.assignable-title {
+  font-weight: 600;
+}
+
+.assignable-meta {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.assignable-notes {
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.assignable-owner {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.assignment-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.assignment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.assignment-row button {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+
+.assignment-status {
+  font-size: 0.8rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+}
+
+.assignment-status--accepted {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+.assignment-status--pending {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.assignable-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.assign-other {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 12rem;
+}
+
+.assign-other select {
+  flex: 1;
+}
