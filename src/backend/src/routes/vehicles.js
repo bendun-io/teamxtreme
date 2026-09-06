@@ -16,6 +16,9 @@ function publicVehicle(v) {
     id: v.id,
     createdBy: v.created_by,
     createdByName: v.created_by_name,
+    startingPoint: v.starting_point,
+    endingPoint: v.ending_point,
+    departureTime: v.departure_time,
     seats: v.seats,
     details: v.details,
     createdAt: v.created_at,
@@ -29,13 +32,22 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { seats, details } = req.body || {};
+  const { seats, details, startingPoint, endingPoint, departureTime } = req.body || {};
   const seatsNumber = Number(seats);
   if (!seatsNumber || seatsNumber <= 0) {
     return res.status(400).json({ error: 'seats must be a positive number' });
   }
+  if (!startingPoint || !endingPoint || !departureTime) {
+    return res.status(400).json({ error: 'startingPoint, endingPoint and departureTime are required' });
+  }
 
-  const vehicle = await createVehicle(req.user.id, { seats: seatsNumber, details });
+  const vehicle = await createVehicle(req.user.id, {
+    seats: seatsNumber,
+    details,
+    startingPoint,
+    endingPoint,
+    departureTime,
+  });
   res.status(201).json({ vehicle: publicVehicle(vehicle) });
 }));
 

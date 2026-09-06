@@ -585,23 +585,56 @@ it's the source of truth for "what's next," not a fixed roadmap.
   is unverified beyond code review and the build succeeding; worth an actual
   browser pass next time this page is touched.
 
+- **Vehicles / ride sharing spec gap** — `docs/Spec.md`'s "Core information
+  sharing" section describes rides with "a startingpoint and endpoint," a
+  requirement to make "the one offering the ride clickable and re-use the
+  user overlay" (the same `Modal.jsx`/`ContactLinks.jsx` pattern
+  `CalendarPage.jsx` already uses), and "only show rides that are in the
+  future ... sort the future rides ascending in time" with past rides
+  revealed by a toggle at the bottom. The previous `VehiclesPage.jsx`/
+  `vehicles` table only had `seats` and freeform `details`, no starting/
+  ending point fields, no clickable-creator overlay, and no future/past
+  split or sorting at all.
+
+  Backend: migration `009_add_vehicle_ride_fields.sql` adds
+  `vehicles.starting_point`/`ending_point`/`departure_time`, all nullable
+  (existing rows keep `null` rather than a backfilled guess — same pattern
+  as `accommodations.spots`); `POST /api/vehicles` now requires all three;
+  `GET /api/vehicles` orders by `departureTime` ascending (nulls last). The
+  table/route name stays `vehicles` — only the fields changed, not the
+  entity's name in code/nav, since renaming it wasn't part of closing this
+  gap. Frontend: `VehiclesPage.jsx` gained "Start"/"Ziel"/"Abfahrt" fields in
+  the add form; the ride's `createdByName` is now a button opening the
+  existing contact-overlay `Modal`/`ContactLinks` (sourced from the
+  `GET /api/users` response the page already fetches for the assign picker
+  — no new backend route needed); and the list is split client-side into an
+  upcoming section (ascending, matching the API's order) and a past section
+  hidden behind a "▼ Vergangene Fahrten anzeigen" toggle, sorted descending.
+  New CSS in the shared `AssignableList.css` (`.assignable-owner-button`,
+  `.assignable-toggle-past`, `.assignable-list--past`, `.assignable-time`) —
+  no new stylesheet. Full reasoning in
+  [Architecture.md](Architecture.md#vehicles--ride-sharing).
+
+  Verified with a full local click-through (Playwright driving the Vite dev
+  server against the disposable test Postgres/ClamAV containers): created a
+  ride via the real form (start/end point, departure time, seats, details)
+  → appears in the upcoming list; clicking the creator's name opens the
+  contact modal with a working mailto link; a ride seeded via the API with a
+  past `departureTime` is hidden by default and appears under "Vergangene
+  Fahrten anzeigen" once toggled, sorted separately from the upcoming list.
+  Tests: `tests/api/vehicles.test.js` gained cases for the three new
+  required fields and for `departureTime`-ascending ordering; existing
+  vehicle fixtures in `tests/api/admin.test.js` and
+  `tests/security/ownership.test.js` updated to include them. 132 tests
+  total, all passing.
+
 ## Next unfinished item
 
 The still-open placeholder WhatsApp group link noted earlier (blocked on the
 real link existing, not on implementation work) remains outstanding.
 
-Also found while looking for the next piece of work this session, but not
-yet built: **Vehicles doesn't match the spec's "rides" wording.**
-`docs/Spec.md`'s "Core information sharing" section describes rides with "a
-startingpoint and endpoint," a requirement to make "the one offering the
-ride clickable and re-use the user overlay" (the same `Modal.jsx`/
-`ContactLinks.jsx` pattern `CalendarPage.jsx` already uses), and "only show
-rides that are in the future ... sort the future rides ascending in time"
-with past rides revealed by a toggle at the bottom — mirroring Flights'
-future/past treatment. The current `VehiclesPage.jsx`/`vehicles` table only
-has `seats` and freeform `details`, no starting/ending point fields, no
-clickable-creator overlay, and no future/past split or sorting at all. This
-wasn't touched this session to keep the Activities change scoped and
-reviewable; it's the next clear gap between spec and code. A fresh
-read-through of `docs/Spec.md` against the running app is still worth doing
-after that, rather than trusting this file's own status list as exhaustive.
+No other gap between `docs/Spec.md` and the running app was found this
+session — a fresh read-through of the spec section by section against
+`src/` is still the right first step next time, rather than trusting this
+file's own status list as exhaustive (that's how the Kalender nav item,
+Activities, and this Vehicles gap were each found).

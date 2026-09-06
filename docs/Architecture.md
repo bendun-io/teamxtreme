@@ -50,6 +50,9 @@ src/
       006_create_settings.sql                           # key/value settings table (whatsapp_link)
       007_add_accommodation_spots.sql                    # accommodations.spots (nullable)
       008_create_activities.sql                           # activities table
+      009_add_vehicle_ride_fields.sql                       # vehicles.starting_point/ending_point/
+                                                              # departure_time (nullable — pre-migration
+                                                              # rows simply have none of these)
     src/
       app.js                # builds and exports the Express app (routes, static hosting, SPA
                              # fallback) without calling .listen() — imported directly by index.js
@@ -153,7 +156,10 @@ src/
                                 # caller's own flights/accommodations, hidden when empty)
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
-        VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
+        VehiclesPage.jsx       # add a ride (start/end point, departure time, seats/details), assign
+                                # self/others, accept an assignment; creator's name opens the shared
+                                # contact-overlay Modal; list splits into upcoming (ascending) and a
+                                # collapsed past section — see "Vehicles / ride sharing" below
         ActivitiesPage.jsx     # add activity (title/location/start/optional end, with a
                                 # "use my location" button), list of ongoing/future activities,
                                 # "Beenden" (stop) button for the creator or an admin
@@ -563,6 +569,50 @@ current moment; and the list only ever shows ongoing or future activities.
   layout) rather than introducing its own — its add-form-plus-flat-list
   shape is the same as Flights', just without the edit form/fields being
   flight-specific.
+
+## Vehicles / ride sharing
+
+Per docs/Spec.md's "Core information sharing" section ("some rides in there
+with startingpoint and endpoint ... make the one offering the ride clickable
+and re-use the user overlay ... only show rides that are in the future ...
+sort the future rides ascending in time"), `vehicles` (still that table/route
+name — the entity is a ride, but renaming the table/nav item wasn't part of
+the gap being closed here) gained three fields on top of the existing
+`seats`/`details`: `starting_point`, `ending_point`, `departure_time`
+(migration `009_add_vehicle_ride_fields.sql`, all nullable — existing rows
+created before this migration simply have none of them, the same pattern as
+`accommodations.spots`). `POST /api/vehicles` requires all three (`400` if
+any is missing), so every ride created from here on has them even though the
+column itself stays nullable for backward compatibility.
+
+- **Clickable creator, reusing the user overlay**: `VehiclesPage.jsx` already
+  fetches `GET /api/users` (for the "assign someone else" picker), which
+  includes every user's contact fields — so the ride's `createdByName` is
+  rendered as a button that opens the same `components/Modal.jsx` +
+  `components/ContactLinks.jsx` pattern `CalendarPage.jsx` uses, keyed off
+  `createdBy`/a `usersById` lookup built from that same response. No new
+  backend route needed.
+- **Future/past split, sorted ascending**: computed entirely client-side
+  (same pattern as Calendar/HomePage's open-tasks card) from the existing
+  `GET /api/vehicles` response, which orders rows by
+  `departure_time ASC NULLS LAST, created_at ASC` — a ride with no
+  `departure_time` (a pre-migration row) sorts last among the "future" list
+  rather than being excluded, since there's no time to compare against `now()`
+  and hiding it entirely would silently drop still-relevant data. A ride
+  whose `departureTime` has passed is filtered out of the default view and
+  shown only behind a "▼ Vergangene Fahrten anzeigen" toggle at the bottom of
+  the list (`▲ ... ausblenden` once expanded), sorted descending (most recent
+  first) since that reads more naturally for a past list than the ascending
+  order used for upcoming ones — the spec asks that past rides appear below
+  a toggle without specifying their order.
+- **No dedicated CSS file**: the new "Start"/"Ziel"/"Abfahrt" form fields and
+  the past-rides toggle reuse `pages/AssignableList.css` (already shared with
+  `AccommodationsPage.jsx` for the assignment list/accept-button styling)
+  rather than introducing a new stylesheet — `.assignable-owner-button`
+  mirrors `CalendarPage.css`'s `.calendar-name-button` (underlined,
+  primary-colored text button) for the same "click a name to see contact
+  info" affordance, and `.assignable-toggle-past`/`.assignable-list--past`
+  are new rules for the collapsed section.
 
 ## Calendar arrival/departure markers
 

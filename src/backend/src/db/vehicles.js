@@ -1,7 +1,8 @@
 import { pool } from './pool.js';
 
 const SELECT_WITH_ASSIGNMENTS = `
-  SELECT v.id, v.created_by, u.name AS created_by_name, v.seats, v.details, v.created_at,
+  SELECT v.id, v.created_by, u.name AS created_by_name, v.seats, v.details,
+         v.starting_point, v.ending_point, v.departure_time, v.created_at,
          COALESCE(
            json_agg(json_build_object(
              'id', va.id,
@@ -23,7 +24,9 @@ const SELECT_WITH_ASSIGNMENTS = `
 const GROUP_BY = 'GROUP BY v.id, u.name';
 
 export async function listVehicles() {
-  const { rows } = await pool.query(`${SELECT_WITH_ASSIGNMENTS} ${GROUP_BY} ORDER BY v.created_at ASC`);
+  const { rows } = await pool.query(
+    `${SELECT_WITH_ASSIGNMENTS} ${GROUP_BY} ORDER BY v.departure_time ASC NULLS LAST, v.created_at ASC`
+  );
   return rows;
 }
 
@@ -32,12 +35,12 @@ export async function findVehicleById(id) {
   return rows[0] || null;
 }
 
-export async function createVehicle(userId, { seats, details }) {
+export async function createVehicle(userId, { seats, details, startingPoint, endingPoint, departureTime }) {
   const { rows } = await pool.query(
-    `INSERT INTO vehicles (created_by, seats, details)
-     VALUES ($1, $2, $3)
+    `INSERT INTO vehicles (created_by, seats, details, starting_point, ending_point, departure_time)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
-    [userId, seats, details || null]
+    [userId, seats, details || null, startingPoint, endingPoint, departureTime]
   );
   return findVehicleById(rows[0].id);
 }

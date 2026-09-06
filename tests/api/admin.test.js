@@ -50,7 +50,12 @@ async function seedFullTrip() {
     endDate: '2026-06-08',
     spots: 4,
   });
-  await member.post('/api/vehicles', { seats: 4 });
+  await member.post('/api/vehicles', {
+    startingPoint: 'Karlsruhe',
+    endingPoint: 'Málaga',
+    departureTime: '2026-06-01T09:00:00Z',
+    seats: 4,
+  });
   await member.post('/api/activities', {
     title: 'Sparring',
     location: 'Gym',
