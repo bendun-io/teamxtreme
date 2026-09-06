@@ -1,0 +1,37 @@
+services:
+  teamxtreme-server:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: teamxtreme-server
+    ports:
+      - "1337:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: teamxtreme-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-teamxtreme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-teamxtreme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-teamxtreme}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUD_FLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
