@@ -90,7 +90,7 @@ function HomePage() {
     <div className="page">
       <header className="hero">
         <img src="/header.svg" alt="Titelbild" className="hero-image" />
-        <h1 className="hero-title">TeamXtreme</h1>
+        <h1 className="hero-title">TeamXtreme - Marbella 2026</h1>
         <button
           type="button"
           className="share-button"

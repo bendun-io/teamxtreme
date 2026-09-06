@@ -37,6 +37,8 @@ The app should be used for the team to organize travel together in a better way 
 
 - There should be a folder /tests that contains testcases that can be run locally to test all functionality and APIs. 
 - There should also be specifically security tests, i.e., non users trying to get or modify operations or non admin users to do tasks that only admins should be able to.
+- Create a github action that runs the test suite on pull requests.
+- Create a script for testing that takes from .env the admin credentials and asks questions to add a user. It can either be given a file specifying further input or it should ask for input. It should ask for the name, email (optional), phone (optional), instagram handle (optional), arrival flight information, departing flight information, accomodation (either select an existing or adding one). Then it should create a file specifying the input (for re-use) and create the entry in the deployed system corresponding via http requests.
 
 ## Features
 
@@ -59,11 +61,25 @@ The admin menu should contain cards with different features / subnavigations. Th
 
 ### Core information sharing
 
-- Everyone should be able to add their flight information and there should be an overview of flights.
+- Everyone should be able to add their flight information and there should be an overview of flights. The name of the person in the overview should be clickable and show the user overlay.
 - People should be able to add an accomodation and people should be able to assign themselves or beeing assigned (accept that assignment) to an accomodation. The accomodation should have a location and a start and endate plus a field for extra information. Furthermore, the accomodation should also have a number of (free) spots. The free spots are the spots minus the assigned users.
-- Similar a person should be able to add a rental vehicle and a number of how many people fit in that vehicle.
+- Also add some rides in there with startingpoint and endpoint and if there are free spots in the car. In the list view of the rides, make the one offering the ride clickable and re-use the user overlay for that.
+- Only show rides that are in the future and at the bottom have a symbol to click and then also show past rides blow. Sort the future rides ascending in time.
+
+### Media sharing
+
 - The users should be able to share images and videos in original file quality through the app with each other.
 - The view showing the images should only show a thumbnail for better performance. There should be at the top right a download all button and upon click of the image a higher resolution should load with the option of downloading the single one. The thumbnail should be created upon upload and also for the videos there should be just a thumbnail with an indication that it is a video.
+- For videos uploaded, also create a thumbnail for the specific video that indicates the content for the user and also overlay it with something like a video symbol that the user also knows it is a video.
+- Show some uploading indication in the user interface while a file is uploaded.
+
+### Activities
+
+- User should be able to create an activity that they are doing if they want to give others the opportunity to join.
+- An activity should consist of start time, end time (optional), a location and a title.
+- As location people should be able to use their current location for ease of use.
+- The user who has created the activity (and admins) can always stop an activity. Stopping puts the end time "now" in the entry.
+- The list of activities should only consist of ongoing or future activities.
 
 ### Starting Page
 
@@ -89,7 +105,8 @@ There should be a navigation on the bottom (mobile first view). This navigation 
 - "Calendar" should show the calendar view,
 - "Travel" should show the flights view,
 - "Accommodation" should show the accomodation view,
-- "Vehicles" should show the vehicle page,
+- "Vehicles" should show the ride sharing page,
+- "Activities" showing the list of activities,
 - "Pictures" should show the gallery view (it should also have a number attached to the icon with the total number of pictures shared)
 - "Settings" should go to the profile settings of the user,
 - and if the user is an admin "Admin". Admin is for now the invites page.
