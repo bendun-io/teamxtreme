@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
-import './FlightsPage.css';
+import '../components/ResourceList.css';
 
 const emptyForm = {
   airline: '',
@@ -113,8 +113,8 @@ function FlightsPage() {
         <section className="card">
           <h2>{editingId ? 'Flug bearbeiten' : 'Flug hinzufügen'}</h2>
           {error && <p className="auth-error">{error}</p>}
-          <form onSubmit={handleSubmit} className="flight-form">
-            <div className="flight-form-row">
+          <form onSubmit={handleSubmit} className="resource-form">
+            <div className="resource-form-row">
               <input
                 placeholder="Airline"
                 value={form.airline}
@@ -126,7 +126,7 @@ function FlightsPage() {
                 onChange={(e) => setForm({ ...form, flightNumber: e.target.value })}
               />
             </div>
-            <div className="flight-form-row">
+            <div className="resource-form-row">
               <input
                 placeholder="Abflughafen"
                 value={form.departureAirport}
@@ -140,7 +140,7 @@ function FlightsPage() {
                 required
               />
             </div>
-            <div className="flight-form-row">
+            <div className="resource-form-row">
               <label>
                 Abflug
                 <input
@@ -164,12 +164,12 @@ function FlightsPage() {
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
-            <div className="flight-form-actions">
+            <div className="resource-form-actions">
               <button type="submit" disabled={submitting}>
                 {editingId ? 'Speichern' : 'Hinzufügen'}
               </button>
               {editingId && (
-                <button type="button" className="flight-form-cancel" onClick={cancelEdit}>
+                <button type="button" className="resource-form-cancel" onClick={cancelEdit}>
                   Abbrechen
                 </button>
               )}
@@ -180,26 +180,26 @@ function FlightsPage() {
         <section className="card">
           <h2>Alle Flüge</h2>
           {flights.length === 0 && <p className="placeholder">Noch keine Flüge eingetragen.</p>}
-          <ul className="flight-list">
+          <ul className="resource-list">
             {flights.map((flight) => (
-              <li key={flight.id} className="flight-item">
-                <div className="flight-item-main">
-                  <span className="flight-route">
+              <li key={flight.id} className="resource-item">
+                <div className="resource-item-main">
+                  <span className="resource-title">
                     {flight.departureAirport} → {flight.arrivalAirport}
                   </span>
-                  <span className="flight-meta">
+                  <span className="resource-meta">
                     {[flight.airline, flight.flightNumber].filter(Boolean).join(' · ')}
                   </span>
                 </div>
-                <div className="flight-item-times">
+                <div className="resource-item-times">
                   <span>{formatDateTime(flight.departureTime)}</span>
                   {flight.arrivalTime && <span> → {formatDateTime(flight.arrivalTime)}</span>}
                 </div>
-                {flight.notes && <p className="flight-notes">{flight.notes}</p>}
-                <div className="flight-item-footer">
-                  <span className="flight-owner">{flight.userName}</span>
+                {flight.notes && <p className="resource-notes">{flight.notes}</p>}
+                <div className="resource-item-footer">
+                  <span className="resource-owner">{flight.userName}</span>
                   {flight.userId === user?.id && (
-                    <span className="flight-item-actions">
+                    <span className="resource-item-actions">
                       <button type="button" onClick={() => startEdit(flight)}>
                         Bearbeiten
                       </button>

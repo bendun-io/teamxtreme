@@ -49,6 +49,7 @@ src/
       005_add_media_thumbnail.sql                      # media.thumbnail_name
       006_create_settings.sql                           # key/value settings table (whatsapp_link)
       007_add_accommodation_spots.sql                    # accommodations.spots (nullable)
+      008_create_activities.sql                           # activities table
     src/
       app.js                # builds and exports the Express app (routes, static hosting, SPA
                              # fallback) without calling .listen() — imported directly by index.js
@@ -65,6 +66,7 @@ src/
         flights.js           # flight queries
         accommodations.js    # accommodation + accommodation_assignment queries
         vehicles.js          # vehicle + vehicle_assignment queries
+        activities.js         # activity queries (create/list/stop)
         media.js              # media queries (shared photos/videos)
         settings.js            # key/value app settings (currently just whatsappLink)
       utils/
@@ -94,6 +96,8 @@ src/
         flights.js           # flights CRUD, mounted behind requireAuth
         accommodations.js    # accommodations add + assign/accept, mounted behind requireAuth
         vehicles.js          # vehicles add + assign/accept, mounted behind requireAuth
+        activities.js         # activities add + list (ongoing/future only) + stop,
+                               # mounted behind requireAuth
         media.js              # media upload (scanUpload.js + thumbnail.js) + gallery listing +
                                # download-all zip (archiver), mounted behind requireAuth
         settings.js            # GET /api/settings — read-only, any authenticated user
@@ -117,13 +121,17 @@ src/
         AuthContext.jsx      # fetches /api/auth/me, exposes {user, loading, refresh, logout}
         RequireAuth.jsx      # route guards (RequireAuth, RequireAdmin); also renders BottomNav
         BottomNav.jsx         # fixed bottom nav, icon-only (Home/Kalender/Reise/Unterkunft/
-                               # Fahrzeuge/Bilder[+count badge]/Profil/[Admin])
+                               # Fahrzeuge/Aktivitäten/Bilder[+count badge]/Profil/[Admin])
         auth.css
       components/            # small UI pieces shared across pages
         Modal.jsx             # generic centered/bottom-sheet overlay (backdrop click + Escape to
                                # close); used by CalendarPage's contact overlay, reusable elsewhere
         ContactLinks.jsx       # renders a user's mailto/tel/wa.me/instagram links from
                                 # {email, phone, instagramHandle}, skipping any that are unset
+        ResourceList.css        # shared "add form + list of items with per-owner actions"
+                                 # styling for a flat, single-owner resource (no assignments) —
+                                 # used by FlightsPage and ActivitiesPage; the richer
+                                 # accommodations/vehicles shape has its own AssignableList.css
       media/
         MediaCountContext.jsx  # shared { count, refresh() } for the bottom nav's Bilder badge —
                                 # a context (not a plain fetch in BottomNav.jsx) because
@@ -146,6 +154,9 @@ src/
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
+        ActivitiesPage.jsx     # add activity (title/location/start/optional end, with a
+                                # "use my location" button), list of ongoing/future activities,
+                                # "Beenden" (stop) button for the creator or an admin
         SettingsPage.jsx       # edit own name + profile picture ("Profil" in the bottom nav), logout
         CalendarPage.jsx       # read-only presence/accommodation table, derived from flights + accommodations;
                                 # clicking a row's name opens a Modal with that user's ContactLinks; a
@@ -514,6 +525,44 @@ danger color (`.assignable-spots--over`) as a visible overbooking signal
 rather than silently hiding it. A `null` `spots` (a pre-migration
 accommodation) hides the capacity line entirely instead of showing a
 misleading "0 frei".
+
+## Activities
+
+Per docs/Spec.md's "Activities" section, any user can create an activity
+(title, location, start time, optional end time) to invite others to join;
+the creator or an admin can always stop it, which sets its end time to the
+current moment; and the list only ever shows ongoing or future activities.
+
+- **"Ongoing or future" filtering** (`db/activities.js`'s
+  `listActiveActivities()`): `WHERE end_time IS NULL OR end_time > now()`.
+  An activity with no `end_time` runs indefinitely until explicitly stopped
+  (matching "the user ... can always stop an activity" — there's no separate
+  scheduled-vs-open-ended distinction); one with a future `end_time` is
+  still upcoming/ongoing; one whose `end_time` has passed (whether it was
+  stopped or its scheduled end simply elapsed) is excluded. Unlike Flights
+  there's no separate past/future toggle — the spec only asks that the list
+  "consist of" ongoing or future activities, not that past ones be
+  reachable at all.
+- **Stop authorization** (`routes/activities.js`): mirrors the spec's exact
+  wording — `existing.created_by !== req.user.id && !req.user.is_admin`
+  returns `403`, otherwise `stopActivity()` sets `end_time = now()`
+  server-side (the client never sends a timestamp for this, so it can't be
+  backdated or postdated). No edit endpoint exists — the spec only calls for
+  creating and stopping, not editing title/location/times afterwards.
+- **"Use current location"** (`ActivitiesPage.jsx`'s `handleUseLocation()`):
+  reads `navigator.geolocation.getCurrentPosition()`, then reverse-geocodes
+  the coordinates via OpenStreetMap's Nominatim API (`nominatim.openstreetmap.org/reverse`,
+  no API key required) to fill the location field with a human-readable
+  address instead of raw coordinates. If the device denies/lacks geolocation,
+  or the reverse-geocoding request fails (offline, rate-limited), it falls
+  back to a plain `"<lat>, <lon>"` string — the location field stays a free
+  text input either way, so a failed lookup never blocks creating the
+  activity. No backend involvement; the browser calls Nominatim directly.
+- **No dedicated CSS file**: `ActivitiesPage.jsx` reuses the new
+  `components/ResourceList.css` (see [Frontend](#frontend)'s repository
+  layout) rather than introducing its own — its add-form-plus-flat-list
+  shape is the same as Flights', just without the edit form/fields being
+  flight-specific.
 
 ## Calendar arrival/departure markers
 

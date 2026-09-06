@@ -153,6 +153,11 @@ function HomePage() {
         </section>
 
         <section className="card">
+          <h2>Aktivitäten</h2>
+          <Link to="/activities">Aktivitäten ansehen / eintragen →</Link>
+        </section>
+
+        <section className="card">
           <h2>Fotos &amp; Videos</h2>
           <Link to="/media">Fotos &amp; Videos ansehen / teilen →</Link>
         </section>

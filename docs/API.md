@@ -163,6 +163,28 @@ Mirrors accommodations' accept endpoint.
 **200** `{ "vehicle": {...} }`
 **403** not your assignment. **404** assignment not found.
 
+### Activities
+All routes require auth. Anyone can create an activity; the list only ever
+shows ongoing or future ones.
+
+#### `GET /api/activities`
+Ongoing/future activities, ordered by `startTime` ascending. An activity with
+no `endTime` runs indefinitely (until stopped); one whose `endTime` has
+already passed is omitted.
+**200** `{ "activities": [{ id, createdBy, createdByName, title, location, startTime, endTime, createdAt }] }`
+
+#### `POST /api/activities`
+Body: `{ title, location, startTime, endTime? }`. Creates an activity owned by
+the caller.
+**201** `{ "activity": {...} }`
+**400** if `title`, `location` or `startTime` is missing.
+
+#### `POST /api/activities/:id/stop`
+Sets `endTime` to the current time. Only the creator or an admin may stop an
+activity.
+**200** `{ "activity": {...} }`
+**403** not the creator/an admin. **404** not found.
+
 ### Profile
 All routes require auth and act on the caller's own account — there is no
 way to edit anyone else's profile.
@@ -244,13 +266,13 @@ Body: `{ "whatsappLink": "..." }`.
 
 #### `POST /api/admin/clear-data`
 Resets the app for a new season: deletes every shared photo/video (DB rows
-and files on disk), every flight/accommodation/vehicle and their
+and files on disk), every flight/accommodation/vehicle/activity and their
 assignments, every invite, and every **non-admin** user (and their profile
 picture file, if locally uploaded). Admin accounts and their own profile
 data are kept so the app stays usable immediately afterwards.
 Body: `{ "confirm": "LÖSCHEN" }` — must match exactly, so the destructive
 action can't be triggered by an accidental or scripted request.
-**200** `{ "cleared": { users, flights, accommodations, vehicles, media } }`
+**200** `{ "cleared": { users, flights, accommodations, vehicles, activities, media } }`
 — counts of rows deleted.
 **400** if `confirm` doesn't match `"LÖSCHEN"` exactly (nothing is deleted).
 

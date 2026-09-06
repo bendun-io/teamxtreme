@@ -27,8 +27,9 @@ router.patch('/settings', asyncHandler(async (req, res) => {
 const CLEAR_DATA_CONFIRMATION = 'LÖSCHEN';
 
 // Resets the app for a new season: every non-admin account and all trip data
-// (flights, accommodations, vehicles and their assignments, invites, shared
-// media) is deleted. Admin accounts are kept — see the "Clear data scope"
+// (flights, accommodations, vehicles and their assignments, activities,
+// invites, shared media) is deleted. Admin accounts are kept — see the
+// "Clear data scope"
 // decision in DevelopmentPlan.md — so the app stays usable immediately
 // afterwards instead of requiring a server restart to re-bootstrap an admin.
 router.post('/clear-data', asyncHandler(async (req, res) => {
@@ -55,6 +56,7 @@ router.post('/clear-data', asyncHandler(async (req, res) => {
     const accommodations = await client.query('DELETE FROM accommodations');
     const vehicles = await client.query('DELETE FROM vehicles');
     const flights = await client.query('DELETE FROM flights');
+    const activities = await client.query('DELETE FROM activities');
     const users = await client.query('DELETE FROM users WHERE is_admin = false');
     await client.query('COMMIT');
     counts = {
@@ -62,6 +64,7 @@ router.post('/clear-data', asyncHandler(async (req, res) => {
       flights: flights.rowCount,
       accommodations: accommodations.rowCount,
       vehicles: vehicles.rowCount,
+      activities: activities.rowCount,
       media: media.rowCount,
     };
   } catch (err) {

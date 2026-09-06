@@ -1,22 +1,42 @@
-.flight-form {
+/* Shared "add form + list of items with per-owner actions" styling, used by
+   any page that lists one flat resource owned by whoever created it
+   (FlightsPage, ActivitiesPage) — kept separate from AssignableList.css,
+   which covers the richer accommodations/vehicles shape (assignments,
+   accept/assign controls). */
+
+.resource-form {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
-.flight-form-row {
+.resource-form-row {
   display: flex;
   gap: 0.6rem;
 }
 
-.flight-form-row > input,
-.flight-form-row > label {
+.resource-form-row > input,
+.resource-form-row > label {
   flex: 1;
   min-width: 0;
 }
 
-.flight-form input,
-.flight-form textarea {
+.resource-form-inline {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.resource-form-inline > input {
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-form-inline > button {
+  white-space: nowrap;
+}
+
+.resource-form input,
+.resource-form textarea {
   width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -28,7 +48,7 @@
   box-sizing: border-box;
 }
 
-.flight-form label {
+.resource-form label {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -36,17 +56,17 @@
   color: var(--color-text-muted);
 }
 
-.flight-form textarea {
+.resource-form textarea {
   resize: vertical;
   min-height: 3rem;
 }
 
-.flight-form-actions {
+.resource-form-actions {
   display: flex;
   gap: 0.6rem;
 }
 
-.flight-form button {
+.resource-form button {
   border: none;
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
@@ -56,17 +76,17 @@
   cursor: pointer;
 }
 
-.flight-form button:hover {
+.resource-form button:hover {
   background: var(--color-primary-hover);
 }
 
-.flight-form-cancel {
+.resource-form-cancel {
   background: var(--color-bg) !important;
   color: var(--color-text) !important;
   border: 1px solid var(--color-border) !important;
 }
 
-.flight-list {
+.resource-list {
   list-style: none;
   margin: 0.5rem 0 0;
   padding: 0;
@@ -75,62 +95,62 @@
   gap: 0.75rem;
 }
 
-.flight-item {
+.resource-item {
   border-top: 1px solid var(--color-border);
   padding-top: 0.75rem;
 }
 
-.flight-item:first-child {
+.resource-item:first-child {
   border-top: none;
   padding-top: 0;
 }
 
-.flight-item-main {
+.resource-item-main {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 0.6rem;
 }
 
-.flight-route {
+.resource-title {
   font-weight: 600;
 }
 
-.flight-meta {
+.resource-meta {
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
-.flight-item-times {
+.resource-item-times {
   font-size: 0.9rem;
   color: var(--color-text);
   margin-top: 0.2rem;
 }
 
-.flight-notes {
+.resource-notes {
   margin: 0.4rem 0 0;
   font-size: 0.9rem;
   color: var(--color-text);
 }
 
-.flight-item-footer {
+.resource-item-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 0.4rem;
 }
 
-.flight-owner {
+.resource-owner {
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
-.flight-item-actions {
+.resource-item-actions {
   display: flex;
   gap: 0.6rem;
 }
 
-.flight-item-actions button {
+.resource-item-actions button {
   background: none;
   border: none;
   color: var(--color-primary);
@@ -138,4 +158,8 @@
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0;
+}
+
+.resource-item-actions button.resource-action--danger {
+  color: var(--color-danger-text);
 }

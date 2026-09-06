@@ -96,6 +96,25 @@ test("a user cannot accept a vehicle assignment that isn't theirs", async () => 
   assert.equal(res.status, 403);
 });
 
+test("a user cannot stop another user's activity", async () => {
+  const { client: creator } = await seedUser('own8@test.local');
+  const { client: intruder } = await seedUser('intr4@test.local');
+
+  const createRes = await creator.post('/api/activities', {
+    title: 'Sparring',
+    location: 'Gym',
+    startTime: '2030-01-01T15:00:00Z',
+  });
+  const activityId = createRes.body.activity.id;
+
+  const stopRes = await intruder.post(`/api/activities/${activityId}/stop`);
+  assert.equal(stopRes.status, 403);
+
+  // the activity is untouched, still without an endTime
+  const listRes = await creator.get('/api/activities');
+  assert.equal(listRes.body.activities[0].endTime, null);
+});
+
 test('PATCH /api/profile only ever changes the caller\'s own account', async () => {
   const { client: userA } = await seedUser('own6@test.local');
   const { client: userB, user: userBBefore } = await seedUser('own7@test.local');

@@ -9,6 +9,7 @@ import AdminSettingsPage from './pages/AdminSettingsPage.jsx';
 import FlightsPage from './pages/FlightsPage.jsx';
 import AccommodationsPage from './pages/AccommodationsPage.jsx';
 import VehiclesPage from './pages/VehiclesPage.jsx';
+import ActivitiesPage from './pages/ActivitiesPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
 import MediaPage from './pages/MediaPage.jsx';
@@ -24,6 +25,7 @@ function App() {
         <Route path="/flights" element={<FlightsPage />} />
         <Route path="/accommodations" element={<AccommodationsPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
+        <Route path="/activities" element={<ActivitiesPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/media" element={<MediaPage />} />
         <Route path="/settings" element={<SettingsPage />} />

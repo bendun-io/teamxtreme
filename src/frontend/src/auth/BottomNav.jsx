@@ -55,6 +55,12 @@ const icons = {
       <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
     </svg>
   ),
+  activity: (
+    <svg {...iconProps}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </svg>
+  ),
   profile: (
     <svg {...iconProps}>
       <circle cx="12" cy="8" r="4" />
@@ -75,6 +81,7 @@ const items = [
   { to: '/flights', label: 'Reise', icon: 'flight' },
   { to: '/accommodations', label: 'Unterkunft', icon: 'bed' },
   { to: '/vehicles', label: 'Fahrzeuge', icon: 'car' },
+  { to: '/activities', label: 'Aktivitäten', icon: 'activity' },
   { to: '/media', label: 'Bilder', icon: 'gallery', badge: 'media' },
   { to: '/settings', label: 'Profil', icon: 'profile' },
 ];

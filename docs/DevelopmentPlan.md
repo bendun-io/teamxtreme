@@ -539,13 +539,69 @@ it's the source of truth for "what's next," not a fixed roadmap.
   pure frontend/UI change with nothing to add to the backend suite), so the
   browser click-through above is this feature's only verification.
 
+- **Activities** — the spec's "Activities" section had no implementation at
+  all (no migration, no routes, no page, no nav item) despite the previous
+  "nothing outstanding" note below — found by re-reading `docs/Spec.md`
+  section by section against the actual `src/` tree rather than trusting
+  this file's own prior status summary, the same lesson as the missing
+  Kalender nav item. Any user can create an activity (title, location, start
+  time, optional end time); the creator or an admin can always stop one
+  (setting its end time to now); the list only ever shows ongoing/future
+  activities (`end_time IS NULL OR end_time > now()`), with no past-activity
+  view since the spec doesn't ask for one (unlike Flights/Calendar).
+
+  Backend: migration `008_create_activities.sql` (`activities` table);
+  `GET/POST /api/activities` + `POST /api/activities/:id/stop`
+  (`routes/activities.js`, `db/activities.js`), mounted behind
+  `requireAuth`; also wired into `POST /api/admin/clear-data` alongside
+  flights/accommodations/vehicles so a season reset clears activities too.
+  Frontend: `ActivitiesPage.jsx` at `/activities`, linked from both the
+  bottom nav (new `activity` icon, between Fahrzeuge and Bilder per the
+  spec's listed nav order) and a new homepage card. Its "Standort verwenden"
+  button reads `navigator.geolocation` and reverse-geocodes via
+  OpenStreetMap's Nominatim API (no key needed) to fill the location field
+  with a human-readable address, falling back to raw coordinates if that
+  lookup fails — see [Architecture.md](Architecture.md#activities) for the
+  full design.
+
+  While building this, `FlightsPage.css`'s form/list styling was extracted
+  into a new shared `components/ResourceList.css` (generic `resource-*`
+  class names) rather than duplicating it for Activities, since both pages
+  share the same "add form + flat list of items with per-owner actions"
+  shape — `FlightsPage.jsx` was refactored to use the shared classes and its
+  own CSS file deleted, no visual change intended.
+
+  Tests: `tests/api/activities.test.js` (create validation, list, stop
+  authorization including the admin-can-always-stop case, 404 on a
+  nonexistent activity, and the ongoing/future filter excluding an already-
+  ended activity); `tests/security/unauthenticated.test.js` and
+  `tests/security/ownership.test.js` gained cases for the three new routes
+  and "a user cannot stop another user's activity"; `tests/api/admin.test.js`
+  updated to seed and assert an activity is wiped by `clear-data`. 130 tests
+  total, all passing. Verified with `npm test` (backend) and a production
+  `vite build` (frontend) — no real-browser click-through was done this
+  session (Playwright/Chromium installation failed in this environment),
+  so the UI itself (form layout, geolocation button, stop button visibility)
+  is unverified beyond code review and the build succeeding; worth an actual
+  browser pass next time this page is touched.
+
 ## Next unfinished item
 
-Nothing is currently outstanding from `docs/Spec.md`, including the full
-mid-session update covered above (Admin Menu, media count badge,
-accommodation capacity, Calendar markers) — beyond the still-open
-placeholder WhatsApp group link noted earlier (blocked on the real link
-existing, not on implementation work). Worth a fresh read-through of
-`docs/Spec.md` against the running app next time to confirm nothing else
-has been missed, rather than assuming this list is exhaustive — that's
-exactly how the missing Kalender nav item was found this session.
+The still-open placeholder WhatsApp group link noted earlier (blocked on the
+real link existing, not on implementation work) remains outstanding.
+
+Also found while looking for the next piece of work this session, but not
+yet built: **Vehicles doesn't match the spec's "rides" wording.**
+`docs/Spec.md`'s "Core information sharing" section describes rides with "a
+startingpoint and endpoint," a requirement to make "the one offering the
+ride clickable and re-use the user overlay" (the same `Modal.jsx`/
+`ContactLinks.jsx` pattern `CalendarPage.jsx` already uses), and "only show
+rides that are in the future ... sort the future rides ascending in time"
+with past rides revealed by a toggle at the bottom — mirroring Flights'
+future/past treatment. The current `VehiclesPage.jsx`/`vehicles` table only
+has `seats` and freeform `details`, no starting/ending point fields, no
+clickable-creator overlay, and no future/past split or sorting at all. This
+wasn't touched this session to keep the Activities change scoped and
+reviewable; it's the next clear gap between spec and code. A fresh
+read-through of `docs/Spec.md` against the running app is still worth doing
+after that, rather than trusting this file's own status list as exhaustive.

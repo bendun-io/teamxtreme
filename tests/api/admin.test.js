@@ -51,6 +51,11 @@ async function seedFullTrip() {
     spots: 4,
   });
   await member.post('/api/vehicles', { seats: 4 });
+  await member.post('/api/activities', {
+    title: 'Sparring',
+    location: 'Gym',
+    startTime: '2030-01-01T15:00:00Z',
+  });
   await admin.post('/api/auth/invites', { name: 'Future Member' });
 
   const form = new FormData();
@@ -82,6 +87,7 @@ test('POST /api/admin/clear-data wipes trip data and non-admin users but keeps a
     flights: 1,
     accommodations: 1,
     vehicles: 1,
+    activities: 1,
     media: 1,
   });
 
@@ -95,6 +101,8 @@ test('POST /api/admin/clear-data wipes trip data and non-admin users but keeps a
   assert.equal(accommodationsRes.body.accommodations.length, 0);
   const vehiclesRes = await admin.get('/api/vehicles');
   assert.equal(vehiclesRes.body.vehicles.length, 0);
+  const activitiesRes = await admin.get('/api/activities');
+  assert.equal(activitiesRes.body.activities.length, 0);
   const mediaRes = await admin.get('/api/media');
   assert.equal(mediaRes.body.media.length, 0);
   const invitesRes = await admin.get('/api/auth/invites');
