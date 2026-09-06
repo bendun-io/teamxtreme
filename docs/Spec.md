@@ -21,6 +21,10 @@ The app should be used for the team to organize travel together in a better way 
 - Cloudflare for the deployment is setup.
 - The Google Auth information as depicted by the local .env is created on the deployment.
 
+## Design
+
+- The overall design/coloring should follow https://bjj-karlsruhe.de/
+
 ## Features
 
 - There should be a health endpoint for docker compose to use in the backend.
