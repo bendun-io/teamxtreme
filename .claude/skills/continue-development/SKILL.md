@@ -57,8 +57,8 @@ provider to wire up first), ask the user briefly instead of guessing.
   and confirm with the user before overwriting either.
 - Whenever a UI element is created, make sure that it is encapsuled in a way that it can be re-used across the application. Also prefer re-using existing elements wherever possible.
 - Ensure that styles are consistent and follow the design system, and avoid duplicating CSS rules unnecessarily.
-- Deliver a working increment (it should run via docker-compose where applicable),
-  not a partial stub.
+- Similar to the UI part, avoid code duplciation. If functionality can be meaningfully abstracted or reused, do so. Pay attention to creating utility functions or shared modules where appropriate.
+- Deliver a working increment (it should run via docker-compose where applicable), not a partial stub.
 
 ## 5. Update the documentation
 

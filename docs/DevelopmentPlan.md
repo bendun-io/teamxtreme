@@ -104,6 +104,32 @@ it's the source of truth for "what's next," not a fixed roadmap.
   No backend involved. Frontend: `pages/HomePage.jsx` + `.share-button` in
   `App.css`.
 
+- **Test suite** — spec addition: a `/tests` folder with API tests plus
+  dedicated security tests, runnable locally. Tooling: Node's built-in
+  `node --test` runner (no new runtime dependency, in keeping with the
+  project's "no framework unless it earns its place" stance) plus a small
+  hand-rolled cookie-aware `fetch` wrapper (`tests/helpers/client.js`) in
+  place of `supertest`, since session auth here is a cookie, not a bearer
+  token. Tests run against the real Express app and a disposable
+  Postgres container (`tests/docker-compose.yml`, tmpfs storage, port 5433
+  so it never collides with a real dev/prod database) — no mocking of the
+  database or HTTP layer. `npm test` from `tests/` brings the container up,
+  waits for it to be healthy, and runs every `*.test.js` under `api/` and
+  `security/`. `api/` covers the documented success/error responses for
+  health, auth (password login, invites, registration), flights,
+  accommodations, vehicles, users and profile. `security/` covers every
+  authenticated route rejecting both a missing and a forged session cookie,
+  non-admins hitting the admin-only invites routes, and cross-user ownership
+  checks (editing/deleting someone else's flight, accepting an assignment
+  that isn't yours, `PATCH /api/profile` never touching another account).
+  71 tests, all passing. This required a small refactor:
+  `src/backend/src/index.js`'s Express app assembly moved into
+  `src/backend/src/app.js` (exporting `app` without calling `.listen()`) so
+  tests can mount it on an ephemeral port against the test database;
+  `index.js` is now just the process entry point (migrations, bootstrap
+  admin, `app.listen()`). See [tests/README.md](../tests/README.md) for how
+  to run it.
+
 ### Not started
 Roughly in build order — earlier items unblock later ones:
 
@@ -120,12 +146,7 @@ Roughly in build order — earlier items unblock later ones:
    (e.g. via `clamscan`/`clamdscan` over the socket) before writing it to
    the `uploads-data` volume — an infra decision worth confirming before
    building, since it adds a new service to the compose stack.
-3. **Test suite** — spec addition: a `/tests` folder with tests runnable
-   locally against the API, plus dedicated security tests (unauthenticated
-   callers hitting authenticated routes, non-admins hitting admin-only
-   routes like `/api/auth/invites`). No test tooling (runner, HTTP client)
-   is chosen yet.
-4. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
+3. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
    and header image (`src/frontend/public/header.png`) with real branding/
    team photo; fill in the real training times/location on the homepage
    (currently a placeholder string in `pages/HomePage.jsx`).
@@ -133,10 +154,9 @@ Roughly in build order — earlier items unblock later ones:
 ## Next unfinished item
 
 **Media sharing** (item 1 above) — images/videos in original quality shared
-between users, following the profile-picture upload precedent. Two other
-spec additions (items 2 and 3) are worth confirming direction on before
-building: upload malware scanning needs an infra decision (ClamAV sidecar vs.
-another approach) — and doing it before or alongside media sharing avoids
-wiring up a second upload path that then needs retrofitting — and the test
-suite needs a runner/tooling choice. Both are independent of the build-order
-above and could be picked up any time.
+between users, following the profile-picture upload precedent. Upload
+malware scanning (item 2) is worth deciding alongside it — building it
+before or alongside media sharing avoids wiring up a second upload path that
+then needs retrofitting — but that's a call worth confirming (ClamAV sidecar
+vs. another approach) before building, since it adds a new service to the
+compose stack.

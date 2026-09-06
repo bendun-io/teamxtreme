@@ -22,6 +22,8 @@ local UI development.
 docker-compose.yml       # orchestrates teamxtreme-server, postgres, cloudflared
 .env                      # secrets/config for docker-compose (not committed)
 .env.example              # documents every var .env needs
+tests/                    # API + security tests, run locally against a disposable Postgres
+                           # container — see tests/README.md
 src/
   Dockerfile              # multi-stage: builds frontend, copies dist into backend image
   .dockerignore
@@ -33,7 +35,11 @@ src/
                                                         # tables + their assignment tables, ahead
                                                         # of those features' routes/UI landing
     src/
-      index.js             # app entry: runs migrations, static hosting, SPA fallback, mounts routers
+      app.js                # builds and exports the Express app (routes, static hosting, SPA
+                             # fallback) without calling .listen() — imported directly by index.js
+                             # and by the test suite, which mounts it on an ephemeral port
+      index.js             # process entry point: runs migrations, bootstraps the first admin,
+                            # then app.listen()
       db/
         pool.js              # pg Pool (POSTGRES_* env vars); overrides pg's DATE type parser
                               # to keep DATE columns as plain 'YYYY-MM-DD' strings (avoids a
@@ -201,6 +207,23 @@ Backend-only local dev (`cd src/backend && npm install && npm run dev`, via
 the same env vars as above, plus it has nothing to serve under `/` until the
 frontend has been built into `src/backend/public` (a manual step, or via the
 Docker build) — the `/api/*` routes work regardless.
+
+## Testing
+
+`tests/` (a separate package from `src/backend/`) holds API and security
+tests, run with Node's built-in test runner against the real Express app
+(`src/backend/src/app.js`) and a disposable, tmpfs-backed Postgres container
+defined in `tests/docker-compose.yml` (port 5433, so it never touches a real
+dev/prod database) — no mocking of the database or HTTP layer. `cd tests &&
+npm install && npm test` brings the container up, waits for it to be
+healthy, and runs everything under `tests/api/` (one file per resource,
+covering the documented success/error responses) and `tests/security/`
+(every authenticated route rejecting a missing/forged session cookie,
+non-admins hitting admin-only routes, cross-user ownership checks). See
+[tests/README.md](../tests/README.md) for details. This is also why the
+Express app is split into `app.js` (exported, no `.listen()`) and `index.js`
+(the process entry point) — tests import `app.js` directly and mount it on
+an ephemeral port.
 
 ## Deployment
 

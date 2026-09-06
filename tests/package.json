@@ -1,0 +1,13 @@
+{
+  "name": "teamxtreme-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pretest": "docker compose up -d --wait",
+    "test": "node --env-file=.env.test --test --test-concurrency=1",
+    "down": "docker compose down"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3"
+  }
+}

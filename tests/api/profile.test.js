@@ -1,0 +1,84 @@
+import { test, before, beforeEach, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { startServer, stopServer, resetDb, closeDb } from '../helpers/server.js';
+import { loginAsNewUser } from '../helpers/seed.js';
+
+let baseUrl;
+
+before(async () => {
+  baseUrl = await startServer();
+});
+
+beforeEach(async () => {
+  await resetDb();
+});
+
+after(async () => {
+  await stopServer();
+  await closeDb();
+});
+
+test('GET /api/profile returns the caller\'s own account', async () => {
+  const { client, user } = await loginAsNewUser(baseUrl, {
+    email: 'profile1@test.local',
+    password: 'pw123456',
+    name: 'Original Name',
+  });
+  const res = await client.get('/api/profile');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.user.id, user.id);
+  assert.equal(res.body.user.name, 'Original Name');
+});
+
+test('PATCH /api/profile updates the name only', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile2@test.local',
+    password: 'pw123456',
+    name: 'Old Name',
+  });
+
+  const form = new FormData();
+  form.set('name', 'New Name');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.user.name, 'New Name');
+});
+
+test('PATCH /api/profile rejects an empty name', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile3@test.local',
+    password: 'pw123456',
+    name: 'Keep Me',
+  });
+
+  const form = new FormData();
+  form.set('name', '   ');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 400);
+});
+
+test('PATCH /api/profile uploads a picture and rejects non-image files', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile4@test.local',
+    password: 'pw123456',
+    name: 'Picture Person',
+  });
+
+  // 1x1 transparent PNG
+  const pngBytes = Buffer.from(
+    '89504e470d0a1a0a0000000d4948445200000001000000010802000000907753' +
+      'de0000000c4944415478da6360000002000100ffff03000006000557bfabd4' +
+      '0000000049454e44ae426082',
+    'hex'
+  );
+  const imageForm = new FormData();
+  imageForm.set('picture', new Blob([pngBytes], { type: 'image/png' }), 'avatar.png');
+  const imageRes = await client.patch('/api/profile', undefined, { formData: imageForm });
+  assert.equal(imageRes.status, 200);
+  assert.ok(imageRes.body.user.profilePictureUrl.startsWith('/uploads/'));
+
+  const textForm = new FormData();
+  textForm.set('picture', new Blob([Buffer.from('not an image')], { type: 'text/plain' }), 'notes.txt');
+  const textRes = await client.patch('/api/profile', undefined, { formData: textForm });
+  assert.equal(textRes.status, 400);
+});
