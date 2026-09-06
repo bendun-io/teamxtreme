@@ -1,5 +1,5 @@
 ---
-name: Continue Development
+name: continue-development
 description: Resume work on TeamXtreme by comparing docs/Spec.md against the current state of the repo, then picking up the next logical piece of unfinished work. Use when the user asks to "continue development", "keep going", "pick up where we left off", or asks what to work on next.
 ---
 

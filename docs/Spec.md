@@ -7,6 +7,8 @@
 - The backend should use node js.
 - It should have the possibility to run locally without the full docker compose, to test the PWA without the need to redeploy or run the full docker stack.
 - The app's user interace does not need to be multi lingual. Hardcoded German texts and symbols are enough.
+- Sessions should be managed through JWT tokens.
+- Uploaded media should be stored in a mounted volume.
 
 ## General Purpose
 
@@ -16,7 +18,7 @@ The app should be used for the team to organize travel together in a better way 
 ## Features
 
 - There should be a health endpoint for docker compose to use in the backend.
-- People should be able to log in using a password or Google/Instagram social logins after beeing invited.
+- People should be able to log in using a password or Google/Instagram social logins after beeing invited. The invite should be a per person invite and users should not be able to invite further users. Only admins can add someone.
 - Everyone should be able to add their flight information and there should be an overview of flights.
 - People should be able to add an accomodation and people should be able to assign themselves or beeing assigned (accept that assignment) to an accomodation. The accomodation should have a location and a start and endate plus a field for extra information.
 - Similar a person should be able to add a rental vehicle and a number of how many people fit in that vehicle.
