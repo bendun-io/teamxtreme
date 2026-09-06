@@ -46,7 +46,14 @@ starting the next. If multiple reasonable next steps exist and the choice would
 meaningfully change direction (e.g. which feature to build next, which auth
 provider to wire up first), ask the user briefly instead of guessing.
 
-## 4. Implement
+## 4. Create a github issue and branch for the next piece of work
+
+- Create a new GitHub issue describing the next piece of work.
+- Create a new branch for this work, following the naming convention (e.g., `feature/next-piece`).
+- Switch to the new branch using `git checkout <branch-name>`.
+- Verify that you are on the correct branch by running `git status` and checking the branch name.
+
+## 5. Implement
 
 - Make routine setup/scaffolding decisions yourself; don't stop to confirm things
   a careful engineer would just decide (folder layout, naming, dependency choices)
@@ -60,7 +67,7 @@ provider to wire up first), ask the user briefly instead of guessing.
 - Similar to the UI part, avoid code duplciation. If functionality can be meaningfully abstracted or reused, do so. Pay attention to creating utility functions or shared modules where appropriate.
 - Deliver a working increment (it should run via docker-compose where applicable), not a partial stub.
 
-## 5. Update the documentation
+## 6. Update the documentation
 
 - Update [docs/Spec.md](../../../docs/Spec.md) with any changes to the specification.
 - Update [docs/Architecture.md](../../../docs/Architecture.md) with any changes to the system's structure.
@@ -68,7 +75,13 @@ provider to wire up first), ask the user briefly instead of guessing.
 - Update [docs/DevelopmentPlan.md](../../../docs/DevelopmentPlan.md) with any changes to the implementation plan.
 - Update [docs/ExternalSetup.md](../../../docs/ExternalSetup.md) with any changes to the external setup instructions, e.g., setting up the social login providers.
 
-## 6. Wrap up
+## 7. Commit changes and create a pull request
 
-Summarize what changed and explicitly name the next unfinished item from the spec,
-so a future "continue development" invocation (or session) can pick up cleanly.
+- Commit your changes with a meaningful commit message.
+- Push the branch to the remote repository.
+- Create a pull request for the branch, linking it to the corresponding GitHub issue.
+
+## 8. Wrap up
+
+- Summarize what changed and explicitly name the next unfinished item from the spec,
+  so a future "continue development" invocation (or session) can pick up cleanly.
