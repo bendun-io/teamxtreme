@@ -62,6 +62,8 @@ src/
         media.js              # media queries (shared photos/videos)
       utils/
         jwt.js               # session cookie + OAuth "state" JWT helpers
+        loginRateLimit.js     # per-IP failed-login counter + 10-minute block
+                               # (in-memory), used by routes/auth.js's login handler
         asyncHandler.js       # forwards rejected promises from async route handlers to Express
         uploads.js            # resolves + creates the uploads dir and quarantine dir (UPLOADS_DIR/
                                # QUARANTINE_DIR or local defaults)
@@ -173,6 +175,28 @@ src/
   ID is already linked to a user — it does not auto-link by matching email,
   so a provider can't be added to an existing account after the fact without
   going through a new invite.
+
+## Login brute-force protection
+
+Per the spec's "Security" requirement, `POST /api/auth/login`
+(`utils/loginRateLimit.js`) tracks failed attempts per source IP in memory —
+acceptable for this app's single-container deployment, same reasoning as
+[Auth](#auth)'s stateless sessions. A failed attempt (wrong password, unknown
+email, or a social-only account with no password) increments a counter for
+the caller's IP; reaching 10 blocks further login attempts from that IP for
+10 minutes (`429`, with a `Retry-After` header/`retryAfterSeconds` body
+field — see [API.md](API.md#post-apiauthlogin)). A successful login resets
+the counter. A malformed request (missing email/password, `400`) isn't
+counted as an attempt. Entries for an IP that never got blocked are dropped
+after an hour of inactivity so the map doesn't grow unbounded over a
+long-running process.
+
+The caller's IP is resolved by `getClientIp()`: it prefers the
+`Cf-Connecting-Ip` header, which `cloudflared` sets to the real visitor IP as
+seen at Cloudflare's edge, falling back to `req.ip` (used in local
+dev/tests, where there's no Cloudflare Tunnel in front). `app.js` also sets
+`app.set('trust proxy', 1)` since `cloudflared` is the one reverse-proxy hop
+between the internet and this server in production.
 
 ## Contact info
 

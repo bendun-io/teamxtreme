@@ -29,6 +29,11 @@ success.
 **200** `{ "user": { id, email, name, profilePictureUrl, isAdmin } }`
 **401** `{ "error": "invalid credentials" }` — wrong password, unknown email,
 or an account that only has a social login (no `password_hash`).
+**429** `{ "error": "too many failed login attempts", "retryAfterSeconds": N }`
+(also sent as a `Retry-After` header) — the caller's IP has reached 10 failed
+attempts; see
+[Architecture.md](Architecture.md#login-brute-force-protection). A successful
+login resets the counter for that IP.
 
 #### `POST /api/auth/logout`
 Clears the session cookie. **204**, no body.

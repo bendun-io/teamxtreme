@@ -19,6 +19,11 @@ const publicDir = path.join(__dirname, '..', 'public');
 
 export const app = express();
 
+// Only `cloudflared` sits in front of this server in production (a single
+// hop), so trust its X-Forwarded-For — needed for req.ip to resolve to the
+// real visitor rather than the tunnel daemon's own docker-network address.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());

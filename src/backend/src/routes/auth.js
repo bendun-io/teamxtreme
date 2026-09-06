@@ -7,6 +7,7 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { setSessionCookie, clearSessionCookie, signOAuthState, verifyOAuthState } from '../utils/jwt.js';
 import { buildAuthorizeUrl, exchangeCodeForProfile } from '../oauth/providers.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { getClientIp, getBlockedRetryAfterSeconds, recordFailedLogin, recordSuccessfulLogin } from '../utils/loginRateLimit.js';
 
 const router = Router();
 
@@ -24,6 +25,13 @@ router.post('/logout', (req, res) => {
 });
 
 router.post('/login', asyncHandler(async (req, res) => {
+  const ip = getClientIp(req);
+  const retryAfterSeconds = getBlockedRetryAfterSeconds(ip);
+  if (retryAfterSeconds > 0) {
+    res.set('Retry-After', String(retryAfterSeconds));
+    return res.status(429).json({ error: 'too many failed login attempts', retryAfterSeconds });
+  }
+
   const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'email and password are required' });
@@ -31,12 +39,17 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   const user = await findUserByEmail(email);
   if (!user || !user.password_hash) {
+    recordFailedLogin(ip);
     return res.status(401).json({ error: 'invalid credentials' });
   }
 
   const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) return res.status(401).json({ error: 'invalid credentials' });
+  if (!valid) {
+    recordFailedLogin(ip);
+    return res.status(401).json({ error: 'invalid credentials' });
+  }
 
+  recordSuccessfulLogin(ip);
   setSessionCookie(res, user.id);
   res.json({ user: publicUser(user) });
 }));

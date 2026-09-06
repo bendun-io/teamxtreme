@@ -287,39 +287,49 @@ it's the source of truth for "what's next," not a fixed roadmap.
   flight and self-assigning to an accommodation makes the card disappear.
   See [Architecture.md](Architecture.md#frontend) for details.
 
+- **Login brute-force protection** — a per-IP failed-login counter
+  (`src/backend/src/utils/loginRateLimit.js`), reset on a successful login,
+  blocking further login attempts from that IP with a `429` for 10 minutes
+  once it reaches 10 failures. In-memory (no separate store), as noted when
+  this was scoped — acceptable for this app's single-container deployment.
+  The caller's IP is resolved via a new `getClientIp()` helper that prefers
+  the `Cf-Connecting-Ip` header (`cloudflared` sets this to the real visitor
+  IP in production) over `req.ip`; `app.js` now also sets
+  `app.set('trust proxy', 1)` since `cloudflared` is the one reverse-proxy
+  hop in front of the server. A malformed login request (missing
+  email/password) isn't counted as a failed attempt, only a wrong
+  password/unknown email/social-only account. Entries for an IP that never
+  got blocked expire after an hour of inactivity so the in-memory map
+  doesn't grow unbounded. Tests: `tests/security/brute-force.test.js`, each
+  test using its own synthetic `Cf-Connecting-Ip` for isolation (10 failures
+  → `429`; a different IP is unaffected; a success resets the counter). See
+  [Architecture.md](Architecture.md#login-brute-force-protection) and
+  [API.md](API.md#post-apiauthlogin) for details.
+
 ## Next unfinished item
 
-`docs/Spec.md` picked up three new requirements (added directly to the spec
-during the open-tasks-card work above, not yet implemented):
+`docs/Spec.md` picked up two more new requirements (added directly to the
+spec during the open-tasks-card work in a prior pass, not yet implemented):
 
-1. **Login brute-force protection** — a failed-login counter per source IP,
-   reset on a successful login, blocking further login attempts from that
-   IP for 10 minutes once it reaches 10 failures. Needs a place to track
-   attempts (in-memory is fine for a single-container deployment like this
-   one — no separate store currently exists) and a check in
-   `routes/auth.js`'s login handler.
-2. **CSRF/XSS hardening** — the spec now explicitly calls this out
+1. **CSRF/XSS hardening** — the spec now explicitly calls this out
    ("especially stored XSS"). Worth an audit of where user-supplied text
    (flight/accommodation/vehicle notes, profile fields, media filenames) is
    rendered back without escaping, plus confirming the session cookie's
    `sameSite: lax` + no custom state-changing `GET` routes is adequate CSRF
    protection or whether an explicit token is wanted.
-3. **Media gallery rework** — thumbnails generated at upload time (for both
+2. **Media gallery rework** — thumbnails generated at upload time (for both
    images and videos, videos additionally marked so they're visually
    distinguishable from photos in the grid), the gallery showing thumbnails
    only, a "download all" button, and click-through to a full-resolution
-   view with its own download option. Bigger than the other two: needs an
+   view with its own download option. Bigger than the other one: needs an
    image/video processing step in the upload pipeline (`routes/media.js`,
    `utils/scanUpload.js`), new storage for thumbnails, and a
    `MediaPage.jsx` rework.
 
-None of these were built in this pass — they surfaced only once the spec
-was updated mid-session, and each is substantial enough to deserve its own
-increment rather than being tacked onto unrelated work. Recommended order:
-brute-force protection first (smallest, self-contained, security-relevant),
-then the CSRF/XSS audit (mostly review + targeted fixes), then the media
-rework (the largest, most UI-heavy piece).
+Recommended order: the CSRF/XSS audit next (mostly review + targeted fixes,
+smaller than the media rework), then the media rework (the largest, most
+UI-heavy piece remaining).
 
-Beyond those three, and swapping the placeholder WhatsApp group link in
+Beyond those two, and swapping the placeholder WhatsApp group link in
 `HomePage.jsx`'s "Hilfreiche Links" card for the real invite link once it's
 available, nothing else is outstanding from `docs/Spec.md`.
