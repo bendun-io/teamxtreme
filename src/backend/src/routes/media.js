@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { uploadMiddleware } from '../utils/scanUpload.js';
+import { uploadMiddleware, isAcceptedMediaFile } from '../utils/scanUpload.js';
 import { listMedia, createMedia } from '../db/media.js';
 
 const uploadMedia = uploadMiddleware({
   fieldName: 'file',
   maxFileSize: 500 * 1024 * 1024, // original quality photos/videos need real headroom
   fileFilter: (req, file, cb) => {
-    if (!/^(image|video)\//.test(file.mimetype)) {
+    if (!isAcceptedMediaFile(file)) {
+      console.warn(
+        `media upload rejected: type="${file.mimetype}" name="${file.originalname}" user=${req.user?.id ?? 'unknown'}`
+      );
       return cb(new Error('file must be an image or video'));
     }
     cb(null, true);

@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { updateUser, publicUser } from '../db/users.js';
-import { uploadMiddleware } from '../utils/scanUpload.js';
+import { uploadMiddleware, isAcceptedMediaFile } from '../utils/scanUpload.js';
 
 const uploadPicture = uploadMiddleware({
   fieldName: 'picture',
   maxFileSize: 5 * 1024 * 1024,
   fileFilter: (req, file, cb) => {
-    if (!/^image\//.test(file.mimetype)) {
+    if (!isAcceptedMediaFile(file, { video: false })) {
+      console.warn(
+        `profile picture upload rejected: type="${file.mimetype}" name="${file.originalname}" user=${req.user?.id ?? 'unknown'}`
+      );
       return cb(new Error('picture must be an image'));
     }
     cb(null, true);

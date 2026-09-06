@@ -49,6 +49,16 @@ services:
     image: clamav/clamav-debian:1.4
     container_name: teamxtreme-clamav
     restart: unless-stopped
+    environment:
+      # clamd's compiled-in defaults (StreamMaxLength/MaxFileSize/MaxScanSize
+      # = 100M) are well under the 500 MB media upload cap (see
+      # src/backend/src/routes/media.js) — without raising them, clamd
+      # aborts the scan of any larger photo/video and the upload fails with
+      # a 500. The image's entrypoint rewrites the matching `#Directive`
+      # line in clamd.conf for every CLAMD_CONF_* var (see its /init script).
+      CLAMD_CONF_StreamMaxLength: 550M
+      CLAMD_CONF_MaxFileSize: 550M
+      CLAMD_CONF_MaxScanSize: 550M
     volumes:
       - clamav-data:/var/lib/clamav
     healthcheck:

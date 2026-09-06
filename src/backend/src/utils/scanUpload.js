@@ -5,6 +5,28 @@ import multer from 'multer';
 import { quarantineDir, uploadsDir } from './uploads.js';
 import { isInfected } from './malwareScan.js';
 
+const IMAGE_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tif', '.tiff', '.avif',
+]);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm', '.3gp', '.3g2']);
+
+// Mobile browsers don't always set a usable Content-Type on a camera-roll
+// upload — e.g. a photo/video that's still an iCloud/Google Photos
+// placeholder not yet downloaded to the device often comes through as
+// application/octet-stream (or no type at all) rather than image/* or
+// video/*. Trust the declared MIME type when it looks right, but fall back
+// to the file extension instead of rejecting an otherwise-normal upload.
+export function isAcceptedMediaFile(file, { image = true, video = true } = {}) {
+  const type = file.mimetype || '';
+  if (image && type.startsWith('image/')) return true;
+  if (video && type.startsWith('video/')) return true;
+
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  if (image && IMAGE_EXTENSIONS.has(ext)) return true;
+  if (video && VIDEO_EXTENSIONS.has(ext)) return true;
+  return false;
+}
+
 // A multer field that quarantines the upload, scans it with ClamAV, and only
 // then moves it into the publicly-served uploads dir — so an infected file
 // is never reachable at /uploads/<filename> (see docs/Spec.md's "Security"
@@ -24,12 +46,21 @@ export function uploadMiddleware({ fieldName, maxFileSize, fileFilter }) {
 
   return function scanUpload(req, res, next) {
     upload.single(fieldName)(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: err.message });
+      if (err) {
+        console.warn(
+          `upload rejected on ${req.method} ${req.originalUrl} (user ${req.user?.id ?? 'unknown'}, field "${fieldName}"): ${err.message}`
+        );
+        return res.status(400).json({ error: err.message });
+      }
       if (!req.file) return next();
 
       try {
-        const { infected } = await isInfected(req.file.path);
+        const { infected, viruses } = await isInfected(req.file.path);
         if (infected) {
+          console.warn(
+            `upload rejected by malware scan on ${req.method} ${req.originalUrl} (user ${req.user?.id ?? 'unknown'}): ` +
+              `"${req.file.originalname}" flagged as ${viruses?.join(', ') || 'infected'}`
+          );
           await fs.unlink(req.file.path);
           return res.status(400).json({ error: 'file failed malware scan' });
         }
@@ -40,6 +71,10 @@ export function uploadMiddleware({ fieldName, maxFileSize, fileFilter }) {
         req.file.path = destination;
         next();
       } catch (scanErr) {
+        console.error(
+          `malware scan failed on ${req.method} ${req.originalUrl} (user ${req.user?.id ?? 'unknown'}, file "${req.file.originalname}", ${req.file.size} bytes):`,
+          scanErr
+        );
         await fs.unlink(req.file.path).catch(() => {});
         next(scanErr);
       }

@@ -201,6 +201,30 @@ media) runs through ClamAV before it becomes reachable at `/uploads/...`:
    `uploadsDir`, and only then is it referenced in a response or the
    database.
 
+Every rejection in `scanUpload.js` (a multer-level error such as an
+oversized file, a `fileFilter` rejection, or an infected/failed scan) is
+logged server-side with `console.warn`/`console.error` — including the
+route, the caller's user id, and the file's original name/declared MIME
+type — specifically so a failed upload can be diagnosed from
+`docker compose logs teamxtreme-server` instead of just the generic German
+error text the frontend shows. Uncaught errors elsewhere already reach
+`app.js`'s catch-all error middleware, which logs the full error.
+
+`clamd`'s compiled-in `StreamMaxLength`/`MaxFileSize`/`MaxScanSize` default
+to 100 MB, well under the 500 MB media upload cap — `docker-compose.yml`
+raises all three to 550 MB via `CLAMD_CONF_*` environment variables (the
+image's entrypoint rewrites the matching directive in `clamd.conf`; see its
+`/init` script) so a large photo/video isn't aborted mid-scan.
+
+`fileFilter` on both upload routes (`routes/media.js`, `routes/profile.js`)
+no longer trusts the browser-declared MIME type alone —
+`utils/scanUpload.js`'s `isAcceptedMediaFile()` falls back to the file's
+extension when the type is missing or generic (`application/octet-stream`
+and the like). Mobile browsers often omit or misreport the Content-Type for
+a camera-roll photo/video — e.g. an iCloud/Google Photos file that's still
+just a placeholder locally — which was previously rejected outright even
+though the file itself was a perfectly ordinary JPEG.
+
 `clamav` (see [Deployment](#deployment)) uses the `clamav/clamav-debian:1.4`
 image, which ships with a preloaded signature database (the non-`_base` tag)
 so it doesn't need to download the full ClamAV database set on every
@@ -299,7 +323,9 @@ import `app.js` directly and mount it on an ephemeral port.
   `clamdscan --ping 1`, signature database persisted in the `clamav-data`
   volume so it isn't re-downloaded on every restart. Not published to a host
   port — only reachable from other containers on the compose network, at
-  `clamav:3310`. See [Malware scanning](#malware-scanning).
+  `clamav:3310`. `CLAMD_CONF_StreamMaxLength`/`MaxFileSize`/`MaxScanSize`
+  raise clamd's 100 MB compiled-in scan limits to 550 MB to match the media
+  upload cap. See [Malware scanning](#malware-scanning).
 - `cloudflared` — runs a Cloudflare Tunnel (token-based) to expose the app
   publicly without opening inbound ports. Public hostname routing is
   configured in the Cloudflare dashboard, not in this repo — see

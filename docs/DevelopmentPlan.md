@@ -177,6 +177,37 @@ it's the source of truth for "what's next," not a fixed roadmap.
   other changes needed since the `<img>` markup and `.hero-image` CSS
   (`object-fit: cover`) don't care about the source format.
 
+- **Bugfix: photo uploads from mobile browsers silently rejected** — a user
+  reported "Datei konnte nicht hochgeladen werden" uploading a JPG straight
+  from their phone's camera roll to `/media`. Root causes found by code
+  review (no access to the production container's logs from this
+  environment — see below for how to check them next time):
+  1. `fileFilter` on both `routes/media.js` and `routes/profile.js` only
+     accepted the browser's declared `Content-Type`. Mobile browsers often
+     send `application/octet-stream` (or no type at all) for a camera-roll
+     file that's still an iCloud/Google Photos placeholder — a perfectly
+     normal JPEG then got rejected outright. Fixed by
+     `utils/scanUpload.js`'s new `isAcceptedMediaFile()`, which falls back
+     to the file extension when the declared type is missing/generic.
+  2. Separately (latent, not necessarily what the user hit, but a real
+     mismatch): `clamd`'s compiled-in `StreamMaxLength`/`MaxFileSize`/
+     `MaxScanSize` default to 100 MB, well under the 500 MB media upload
+     cap — any larger video/photo would always fail the scan and 500. Fixed
+     via `CLAMD_CONF_*` environment variables on the `clamav` service in
+     `docker-compose.yml`, raising all three to 550 MB.
+  3. **Every** upload rejection (multer errors, `fileFilter` rejections,
+     infected/failed scans) previously failed silently server-side for the
+     400 cases — only 500s reached `app.js`'s catch-all logger. All three
+     paths in `scanUpload.js` now `console.warn`/`console.error` with the
+     route, calling user's id, and the file's name/declared MIME type, so
+     future occurrences are diagnosable with
+     `docker compose logs teamxtreme-server` instead of guessing from the
+     generic German error text alone.
+  Tests: `tests/api/media.test.js` and `tests/api/profile.test.js` each
+  gained a case uploading a `.jpg`/`.png` with an
+  `application/octet-stream` MIME type to confirm the extension fallback
+  accepts it. See [Architecture.md](Architecture.md#malware-scanning).
+
 ## Next unfinished item
 
 None outstanding from `docs/Spec.md` — every listed feature has an

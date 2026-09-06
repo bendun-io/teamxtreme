@@ -85,6 +85,22 @@ test('POST /api/media rejects a file type that is neither image nor video', asyn
   assert.equal(res.status, 400);
 });
 
+test('POST /api/media accepts a photo whose browser omitted the MIME type, based on its extension', async () => {
+  // Mobile browsers sometimes send application/octet-stream (or no type at
+  // all) for a camera-roll photo/video instead of image/* or video/* — a
+  // real-world case that used to make a perfectly normal upload fail.
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media5@test.local',
+    password: 'pw123456',
+    name: 'Uploader',
+  });
+
+  const form = new FormData();
+  form.set('file', new Blob([pngBytes], { type: 'application/octet-stream' }), 'IMG_1234.jpg');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 201);
+});
+
 test('POST /api/media rejects a file that fails the malware scan and never stores it', async () => {
   const { client } = await loginAsNewUser(baseUrl, {
     email: 'media4@test.local',

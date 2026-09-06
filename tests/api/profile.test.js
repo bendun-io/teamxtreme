@@ -82,3 +82,25 @@ test('PATCH /api/profile uploads a picture and rejects non-image files', async (
   const textRes = await client.patch('/api/profile', undefined, { formData: textForm });
   assert.equal(textRes.status, 400);
 });
+
+test('PATCH /api/profile accepts a picture whose browser omitted the MIME type, based on its extension', async () => {
+  // Mirrors the same real-world mobile-browser quirk covered in
+  // tests/api/media.test.js.
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'profile5@test.local',
+    password: 'pw123456',
+    name: 'Picture Person',
+  });
+
+  const pngBytes = Buffer.from(
+    '89504e470d0a1a0a0000000d4948445200000001000000010802000000907753' +
+      'de0000000c4944415478da6360000002000100ffff03000006000557bfabd4' +
+      '0000000049454e44ae426082',
+    'hex'
+  );
+  const form = new FormData();
+  form.set('picture', new Blob([pngBytes], { type: 'application/octet-stream' }), 'IMG_5678.jpg');
+  const res = await client.patch('/api/profile', undefined, { formData: form });
+  assert.equal(res.status, 200);
+  assert.ok(res.body.user.profilePictureUrl.startsWith('/uploads/'));
+});
