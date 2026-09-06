@@ -77,6 +77,8 @@ it's the source of truth for "what's next," not a fixed roadmap.
   shield) with no visible label — a later spec addition ("use appropriate
   icons and avoid text whenever possible") — with the destination name kept
   as an `aria-label`/`title` for accessibility and hover/long-press hints.
+  (A later "continue development" pass added the missing **Kalender** item —
+  see below.)
 
 - **Calendar view** — a read-only table with one column per day, spanning
   from the earliest flight's arrival to the latest flight's departure (or,
@@ -382,11 +384,33 @@ it's the source of truth for "what's next," not a fixed roadmap.
   `Dockerfile`/`docker-compose.yml` (repo root, `src/`, `tests/`). No app
   code changes.
 
+- **Bugfix: Calendar missing from the bottom nav** — a fresh read-through of
+  `docs/Spec.md` against the running app (its "Bottom Navigation" section
+  explicitly lists Home, Calendar, Travel, Accommodation, Vehicles, Settings,
+  Admin) found `BottomNav.jsx` never had a Kalender item — `/calendar` was
+  only reachable via a link on the homepage, not from the nav present on
+  every authenticated page as the spec requires. All 98 backend tests were
+  re-run to confirm nothing else had drifted (all passing) before this
+  narrower gap was found by inspecting the frontend directly. Fixed by adding
+  a `calendar` icon and a `{ to: '/calendar', label: 'Kalender' }` entry to
+  `BottomNav.jsx`'s `items` array, positioned between Home and Reise to match
+  the spec's listed order. No CSS changes needed — `.bottom-nav-item` already
+  uses `flex: 1`, which auto-adjusts to the item count (it already varies
+  today between 5 and 6 items depending on `user.isAdmin`). Verified via a
+  production `vite build` (succeeds, and the compiled bundle contains the new
+  "Kalender" string); a full local login-and-screenshot pass was attempted
+  but abandoned when installing Playwright/Chromium in this environment
+  proved too slow to be worth blocking on for a single additive flex-item
+  change — worth a proper browser-based check next time this page is
+  touched.
+
 ## Next unfinished item
 
 Nothing is currently outstanding from `docs/Spec.md` beyond swapping the
 placeholder WhatsApp group link in `HomePage.jsx`'s "Hilfreiche Links" card
 for the real invite link once it's available (blocked on that link existing,
-not on any further implementation work). Worth a fresh read-through of
-`docs/Spec.md` against the running app next time to confirm nothing's been
-missed, rather than assuming this list is exhaustive.
+not on any further implementation work — the user was asked and chose to
+leave it for now). Worth a fresh read-through of `docs/Spec.md` against the
+running app next time to confirm nothing else has been missed, rather than
+assuming this list is exhaustive — that's exactly how the missing Kalender
+nav item above was found.
