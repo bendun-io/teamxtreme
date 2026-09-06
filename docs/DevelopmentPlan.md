@@ -73,7 +73,10 @@ it's the source of truth for "what's next," not a fixed roadmap.
   which it depends on for its "Profil" destination — built together.
   `HomePage`'s old top user-bar admin-link/logout button moved into this nav
   / the Settings page respectively, since the nav has no logout slot of its
-  own.
+  own. Nav items render as inline SVG icons (home/plane/bed/car/profile/
+  shield) with no visible label — a later spec addition ("use appropriate
+  icons and avoid text whenever possible") — with the destination name kept
+  as an `aria-label`/`title` for accessibility and hover/long-press hints.
 
 - **Calendar view** — a read-only table with one column per day, spanning
   from the earliest flight's arrival to the latest flight's departure (or,

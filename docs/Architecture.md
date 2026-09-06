@@ -73,7 +73,7 @@ src/
       auth/
         AuthContext.jsx      # fetches /api/auth/me, exposes {user, loading, refresh, logout}
         RequireAuth.jsx      # route guards (RequireAuth, RequireAdmin); also renders BottomNav
-        BottomNav.jsx         # fixed bottom nav (Home/Reise/Unterkunft/Fahrzeuge/Profil/[Admin])
+        BottomNav.jsx         # fixed bottom nav, icon-only (Home/Reise/Unterkunft/Fahrzeuge/Profil/[Admin])
         auth.css
       pages/
         LoginPage.jsx
