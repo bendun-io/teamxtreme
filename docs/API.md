@@ -149,14 +149,27 @@ Mirrors accommodations' accept endpoint.
 **200** `{ "vehicle": {...} }`
 **403** not your assignment. **404** assignment not found.
 
+### Profile
+All routes require auth and act on the caller's own account — there is no
+way to edit anyone else's profile.
+
+#### `GET /api/profile`
+**200** `{ "user": {...} }` — same shape as `/api/auth/me`.
+
+#### `PATCH /api/profile`
+Body: `multipart/form-data` with an optional `name` field and an optional
+`picture` file field (so a name-only update still posts as multipart).
+Uploaded pictures are stored under the `uploads-data` Docker volume (see
+[Architecture.md](Architecture.md#media-storage)) and served back at
+`/uploads/<filename>`; only `name`, only `picture`, or both may be sent —
+whichever is omitted is left unchanged.
+**200** `{ "user": {...} }`
+**400** empty `name`, or `picture` isn't an image / exceeds 5 MB.
+
 ### Planned
 
 Not implemented yet — see [DevelopmentPlan.md](DevelopmentPlan.md) for build
 order.
-
-#### Profile
-- `GET /api/profile`
-- `PATCH /api/profile` — name, profile picture.
 
 #### Media sharing
 - `POST /api/media` — upload (original quality — storage strategy is an open

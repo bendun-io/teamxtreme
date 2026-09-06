@@ -2,6 +2,16 @@ import { pool } from './pool.js';
 
 const PUBLIC_COLUMNS = 'id, email, name, profile_picture_url, is_admin, created_at';
 
+export function publicUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    profilePictureUrl: user.profile_picture_url,
+    isAdmin: user.is_admin,
+  };
+}
+
 export async function listUsers() {
   const { rows } = await pool.query('SELECT id, name FROM users ORDER BY name ASC');
   return rows;
@@ -38,4 +48,16 @@ export async function createUser({
     [email || null, passwordHash || null, name, profilePictureUrl || null, googleId || null, instagramId || null]
   );
   return rows[0];
+}
+
+export async function updateUser(id, { name, profilePictureUrl }) {
+  const { rows } = await pool.query(
+    `UPDATE users SET
+       name = COALESCE($1, name),
+       profile_picture_url = COALESCE($2, profile_picture_url)
+     WHERE id = $3
+     RETURNING ${PUBLIC_COLUMNS}`,
+    [name || null, profilePictureUrl || null, id]
+  );
+  return rows[0] || null;
 }

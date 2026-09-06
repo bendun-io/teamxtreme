@@ -47,6 +47,7 @@ src/
       utils/
         jwt.js               # session cookie + OAuth "state" JWT helpers
         asyncHandler.js       # forwards rejected promises from async route handlers to Express
+        uploads.js            # resolves + creates the uploads directory (UPLOADS_DIR or a local default)
       middleware/
         auth.js              # requireAuth (reads tx_session cookie), requireAdmin
       oauth/
@@ -55,6 +56,7 @@ src/
         health.js           # GET /api/health
         auth.js              # login/logout/me, invites, register, google/instagram OAuth
         users.js             # GET /api/users — minimal {id, name} directory for assign pickers
+        profile.js            # GET/PATCH /api/profile — name + profile picture upload (multer)
         flights.js           # flights CRUD, mounted behind requireAuth
         accommodations.js    # accommodations add + assign/accept, mounted behind requireAuth
         vehicles.js          # vehicles add + assign/accept, mounted behind requireAuth
@@ -70,7 +72,8 @@ src/
       App.jsx               # route table
       auth/
         AuthContext.jsx      # fetches /api/auth/me, exposes {user, loading, refresh, logout}
-        RequireAuth.jsx      # route guards (RequireAuth, RequireAdmin)
+        RequireAuth.jsx      # route guards (RequireAuth, RequireAdmin); also renders BottomNav
+        BottomNav.jsx         # fixed bottom nav (Home/Reise/Unterkunft/Fahrzeuge/Profil/[Admin])
         auth.css
       pages/
         LoginPage.jsx
@@ -80,6 +83,7 @@ src/
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add vehicle (seats/details), assign self/others, accept an assignment
+        SettingsPage.jsx       # edit own name + profile picture ("Profil" in the bottom nav), logout
 ```
 
 ## Backend
@@ -129,6 +133,20 @@ src/
   ID is already linked to a user — it does not auto-link by matching email,
   so a provider can't be added to an existing account after the fact without
   going through a new invite.
+
+## Media storage
+
+- Uploaded files (currently just profile pictures; media sharing will reuse
+  this) are written to a directory resolved by `utils/uploads.js` —
+  `UPLOADS_DIR` if set, otherwise `src/backend/uploads` next to the backend
+  source (created on demand, gitignored) so it works without Docker too.
+  In `docker-compose.yml` the backend mounts the `uploads-data` volume at
+  `/app/uploads`, matching the spec's "uploaded media should be stored in a
+  mounted volume."
+- Files are served back publicly (no auth) from `/uploads/<filename>` via
+  `express.static`, with filenames generated as a random UUID (see
+  `routes/profile.js`) — unguessable enough for this app's small-trusted-group
+  threat model (same reasoning as [Auth](#auth)'s session design).
 
 ## Frontend
 
@@ -191,6 +209,8 @@ Docker build) — the `/api/*` routes work regardless.
   against `/api/health`.
 - `postgres` — Postgres 16, healthcheck via `pg_isready`, data persisted in
   the `postgres-data` volume.
+- `teamxtreme-server` also mounts the `uploads-data` volume at `/app/uploads`
+  (see [Media storage](#media-storage)).
 - `cloudflared` — runs a Cloudflare Tunnel (token-based) to expose the app
   publicly without opening inbound ports. Public hostname routing is
   configured in the Cloudflare dashboard, not in this repo — see

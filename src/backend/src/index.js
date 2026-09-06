@@ -9,9 +9,11 @@ import flightsRouter from './routes/flights.js';
 import accommodationsRouter from './routes/accommodations.js';
 import vehiclesRouter from './routes/vehicles.js';
 import usersRouter from './routes/users.js';
+import profileRouter from './routes/profile.js';
 import { runMigrations } from './db/migrate.js';
 import { bootstrapAdmin } from './db/bootstrapAdmin.js';
 import { requireAuth } from './middleware/auth.js';
+import { uploadsDir } from './utils/uploads.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, '..', 'public');
@@ -29,7 +31,9 @@ app.use('/api/flights', requireAuth, flightsRouter);
 app.use('/api/accommodations', requireAuth, accommodationsRouter);
 app.use('/api/vehicles', requireAuth, vehiclesRouter);
 app.use('/api/users', requireAuth, usersRouter);
+app.use('/api/profile', requireAuth, profileRouter);
 
+app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));
 
 // SPA fallback: any non-API route serves the frontend shell so client-side

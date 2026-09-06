@@ -1,7 +1,7 @@
 .page {
   max-width: 480px;
   margin: 0 auto;
-  padding-bottom: 2rem;
+  padding-bottom: 5rem;
 }
 
 .hero {
@@ -66,31 +66,7 @@
 }
 
 .user-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 0 1rem;
   font-size: 0.9rem;
   color: var(--color-text-muted);
-}
-
-.user-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-
-.user-bar-actions a {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.user-bar-actions button {
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0;
 }

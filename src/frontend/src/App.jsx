@@ -7,6 +7,7 @@ import AdminInvitesPage from './pages/AdminInvitesPage.jsx';
 import FlightsPage from './pages/FlightsPage.jsx';
 import AccommodationsPage from './pages/AccommodationsPage.jsx';
 import VehiclesPage from './pages/VehiclesPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/flights" element={<FlightsPage />} />
         <Route path="/accommodations" element={<AccommodationsPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
       <Route element={<RequireAdmin />}>

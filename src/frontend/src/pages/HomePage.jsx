@@ -12,7 +12,7 @@ const packingList = [
 ];
 
 function HomePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="page">
@@ -23,12 +23,6 @@ function HomePage() {
 
       <div className="user-bar">
         <span>Hallo, {user?.name}</span>
-        <div className="user-bar-actions">
-          {user?.isAdmin && <Link to="/admin/invites">Einladungen</Link>}
-          <button type="button" onClick={logout}>
-            Abmelden
-          </button>
-        </div>
       </div>
 
       <main className="card-list">

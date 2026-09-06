@@ -22,6 +22,8 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       INSTAGRAM_CLIENT_ID: ${INSTAGRAM_CLIENT_ID}
       INSTAGRAM_CLIENT_SECRET: ${INSTAGRAM_CLIENT_SECRET}
+    volumes:
+      - uploads-data:/app/uploads
 
   postgres:
     image: postgres:16-alpine
@@ -46,3 +48,4 @@ services:
 
 volumes:
   postgres-data:
+  uploads-data:

@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db/pool.js';
-import { createUser, findUserByEmail, findUserByProviderId } from '../db/users.js';
+import { createUser, findUserByEmail, findUserByProviderId, publicUser } from '../db/users.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { setSessionCookie, clearSessionCookie, signOAuthState, verifyOAuthState } from '../utils/jwt.js';
 import { buildAuthorizeUrl, exchangeCodeForProfile } from '../oauth/providers.js';
@@ -12,16 +12,6 @@ const router = Router();
 
 function appUrl(pathname) {
   return `${process.env.APP_BASE_URL || 'http://localhost:8000'}${pathname}`;
-}
-
-function publicUser(user) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    profilePictureUrl: user.profile_picture_url,
-    isAdmin: user.is_admin,
-  };
 }
 
 router.get('/me', requireAuth, (req, res) => {

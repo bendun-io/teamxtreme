@@ -53,34 +53,52 @@ it's the source of truth for "what's next," not a fixed roadmap.
   default `DATE` type parser to keep them as plain `YYYY-MM-DD` strings
   instead of JS `Date` objects, which avoids a timezone-dependent
   off-by-one-day bug when they round-trip through JSON.
+- **Profile management** — view/edit own name and profile picture.
+  `GET/PATCH /api/profile` (multipart, `name` + optional `picture` file),
+  mounted behind `requireAuth`; only the caller's own account can be edited.
+  Uploaded pictures land in the new `uploads-data` Docker volume (mounted at
+  `/app/uploads`; falls back to a local `src/backend/uploads` folder when
+  running the backend standalone) and are served back at
+  `/uploads/<filename>` — see
+  [Architecture.md](Architecture.md#media-storage). Prefilling the picture
+  from Google/Instagram on social signup was already in place from the auth
+  work; this item added the ability to view/change it afterwards. Frontend:
+  `SettingsPage.jsx` (name field, file picker with live preview, logout
+  button) at `/settings`. See [API.md](API.md#profile) for details.
+- **Bottom navigation** — a fixed mobile-first nav bar (`BottomNav.jsx`) with
+  Home / Reise / Unterkunft / Fahrzeuge / Profil, plus Admin when
+  `user.isAdmin`, rendered by `RequireAuth`/`RequireAdmin` around every
+  authenticated route so it's always present. This was a spec addition (not
+  in the original build order) that arrived alongside Profile management,
+  which it depends on for its "Profil" destination — built together.
+  `HomePage`'s old top user-bar admin-link/logout button moved into this nav
+  / the Settings page respectively, since the nav has no logout slot of its
+  own.
 
 ### Not started
 Roughly in build order — earlier items unblock later ones:
 
-1. **Profile management** — name + profile picture; prefill picture from
-   social login when available (Google/Instagram profile pictures aren't
-   pulled in yet — `profile_picture_url` is only ever set from the OAuth
-   provider payload's `picture`/`profile_picture_url` field, which is `null`
-   for password-only accounts until this lands).
+1. **Calendar view** — a table with one column per day from the first
+   outbound flight to the last return flight and one row per user (sorted by
+   arrival time), showing per user/day whether they're present (between
+   their own flights) and which accommodation they're staying at. Another
+   spec addition; purely a read view over already-existing flights +
+   accommodations data, no new data model needed.
 2. **Share option** — share the app link via the device's native share sheet
    (Web Share API), falling back to copy-link. (`AdminInvitesPage` already
    has a "copy link" button for invites specifically — this item is the
    general "share the app" button from the spec.)
-3. **Media sharing** — images/videos in original quality. Needs a storage
-   decision (local Docker volume vs. an object store) since "original
-   quality" likely means large files that shouldn't live in Postgres.
+3. **Media sharing** — images/videos in original quality, shared between
+   users. The storage mechanism is now precedented by profile pictures (a
+   Docker volume, served via `express.static`, random-UUID filenames) — this
+   item is mainly the gallery/list UI and an upload flow that preserves
+   original quality (no resizing), rather than a new infra decision.
 4. **PWA polish** — replace placeholder icons (`src/frontend/public/icons/`)
    and header image (`src/frontend/public/header.png`) with real branding/
    team photo; fill in the real training times/location on the homepage
    (currently a placeholder string in `pages/HomePage.jsx`).
 
-## Open decisions
-
-- **Media storage**: local volume mounted into the backend container vs. an
-  external object store (e.g. S3-compatible). "Original file quality" rules
-  out anything with aggressive compression/resizing.
-
 ## Next unfinished item
 
-**Profile management** (item 1 above) — name + profile picture, including
-prefilling the picture from Google/Instagram when the account has one.
+**Calendar view** (item 1 above) — the table-format presence/accommodation
+overview described in the spec's newest bullet.
