@@ -1,6 +1,26 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Palette follows https://bjj-karlsruhe.de/ (per spec): white surfaces on a
+     light gray page, dark maroon as the brand/accent color, near-black body
+     text. */
+  --color-bg: #efefef;
+  --color-surface: #ffffff;
+  --color-border: #d4d4d4;
+  --color-text: #232323;
+  --color-text-muted: #595959;
+
+  --color-primary: #7e161f;
+  --color-primary-hover: #5e1017;
+  --color-primary-contrast: #ffffff;
+
+  --color-danger-bg: #fbe9e9;
+  --color-danger-text: #8a1c1c;
+  --color-success-bg: #e5f3e8;
+  --color-success-text: #1e7b34;
+  --color-warning-bg: #fdf1de;
+  --color-warning-text: #96591a;
 }
 
 * {
@@ -9,6 +29,6 @@
 
 body {
   margin: 0;
-  background: #0f172a;
-  color: #f1f5f9;
+  background: var(--color-bg);
+  color: var(--color-text);
 }

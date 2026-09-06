@@ -21,6 +21,7 @@
   left: 1rem;
   margin: 0;
   font-size: 1.75rem;
+  color: #ffffff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
@@ -32,15 +33,17 @@
 }
 
 .card {
-  background: #1e293b;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .card h2 {
   margin-top: 0;
   font-size: 1.1rem;
+  color: var(--color-primary);
 }
 
 .card ul {
@@ -49,15 +52,16 @@
 }
 
 .card a {
-  color: #38bdf8;
+  color: var(--color-primary);
   text-decoration: none;
   display: inline-block;
   margin-top: 0.5rem;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .placeholder {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -67,7 +71,7 @@
   justify-content: space-between;
   padding: 0 1rem;
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: var(--color-text-muted);
 }
 
 .user-bar-actions {
@@ -77,14 +81,15 @@
 }
 
 .user-bar-actions a {
-  color: #38bdf8;
+  color: var(--color-primary);
   text-decoration: none;
+  font-weight: 600;
 }
 
 .user-bar-actions button {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: 0.9rem;
   padding: 0;

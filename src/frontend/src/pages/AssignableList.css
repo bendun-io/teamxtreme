@@ -18,11 +18,11 @@
 .assignable-form textarea,
 .assign-other select {
   width: 100%;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.6rem 0.7rem;
-  color: #f1f5f9;
+  color: var(--color-text);
   font-size: 1rem;
   font-family: inherit;
   box-sizing: border-box;
@@ -33,7 +33,7 @@
   flex-direction: column;
   gap: 0.3rem;
   font-size: 0.85rem;
-  color: #cbd5e1;
+  color: var(--color-text-muted);
 }
 
 .assignable-form textarea {
@@ -47,10 +47,16 @@
   border: none;
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
-  background: #38bdf8;
-  color: #0f172a;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
   font-weight: 600;
   cursor: pointer;
+}
+
+.assignable-form button:hover,
+.assignable-actions button:hover,
+.assignment-row button:hover {
+  background: var(--color-primary-hover);
 }
 
 .assignable-list {
@@ -63,7 +69,7 @@
 }
 
 .assignable-item {
-  border-top: 1px solid #334155;
+  border-top: 1px solid var(--color-border);
   padding-top: 0.9rem;
 }
 
@@ -85,19 +91,19 @@
 
 .assignable-meta {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .assignable-notes {
   margin: 0.4rem 0 0;
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: var(--color-text);
 }
 
 .assignable-owner {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .assignment-list {
@@ -129,13 +135,13 @@
 }
 
 .assignment-status--accepted {
-  background: rgba(52, 211, 153, 0.15);
-  color: #34d399;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
 }
 
 .assignment-status--pending {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
 }
 
 .assignable-actions {

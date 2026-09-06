@@ -12,8 +12,8 @@ export default defineConfig({
         short_name: 'TeamXtreme',
         description: 'Reiseorganisation für das Team',
         lang: 'de',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#7e161f',
+        background_color: '#efefef',
         display: 'standalone',
         start_url: '/',
         icons: [
