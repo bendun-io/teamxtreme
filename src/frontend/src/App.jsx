@@ -1,47 +1,24 @@
-import './App.css';
-
-const packingList = [
-  'Reisepass / Personalausweis',
-  'Sportkleidung und Trainingsschuhe',
-  'Badesachen',
-  'Sonnencreme und Sonnenbrille',
-  'Ladekabel und Powerbank',
-  'Wasserflasche',
-];
+import { Routes, Route } from 'react-router-dom';
+import { RequireAuth, RequireAdmin } from './auth/RequireAuth.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import InvitePage from './pages/InvitePage.jsx';
+import HomePage from './pages/HomePage.jsx';
+import AdminInvitesPage from './pages/AdminInvitesPage.jsx';
 
 function App() {
   return (
-    <div className="page">
-      <header className="hero">
-        <img src="/header.png" alt="Titelbild" className="hero-image" />
-        <h1 className="hero-title">TeamXtreme</h1>
-      </header>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/invite/:token" element={<InvitePage />} />
 
-      <main className="card-list">
-        <section className="card">
-          <h2>Trainingszeiten</h2>
-          <p className="placeholder">
-            Trainingszeiten und -ort hier eintragen.
-          </p>
-        </section>
+      <Route element={<RequireAuth />}>
+        <Route path="/" element={<HomePage />} />
+      </Route>
 
-        <section className="card">
-          <h2>Reiseinformationen</h2>
-          <p>
-            Nächstgelegener Flughafen: <strong>Málaga (AGP)</strong>
-          </p>
-        </section>
-
-        <section className="card">
-          <h2>Packempfehlung</h2>
-          <ul>
-            {packingList.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-      </main>
-    </div>
+      <Route element={<RequireAdmin />}>
+        <Route path="/admin/invites" element={<AdminInvitesPage />} />
+      </Route>
+    </Routes>
   );
 }
 
