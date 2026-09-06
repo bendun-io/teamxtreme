@@ -26,6 +26,9 @@ local UI development.
 ## Repository layout
 
 ```
+.github/
+  dependabot.yml           # weekly version-update checks for every package.json, Dockerfile
+                            # and docker-compose.yml (see docs/Spec.md's "Security" section)
 docker-compose.yml       # orchestrates teamxtreme-server, postgres, cloudflared
 .env                      # secrets/config for docker-compose (not committed)
 .env.example              # documents every var .env needs
@@ -43,6 +46,7 @@ src/
                                                         # of those features' routes/UI landing
       003_create_media.sql                             # media table for shared photos/videos
       004_add_user_contact_fields.sql                  # users.phone, users.instagram_handle
+      005_add_media_thumbnail.sql                      # media.thumbnail_name
     src/
       app.js                # builds and exports the Express app (routes, static hosting, SPA
                              # fallback) without calling .listen() — imported directly by index.js
@@ -65,12 +69,14 @@ src/
         loginRateLimit.js     # per-IP failed-login counter + 10-minute block
                                # (in-memory), used by routes/auth.js's login handler
         asyncHandler.js       # forwards rejected promises from async route handlers to Express
-        uploads.js            # resolves + creates the uploads dir and quarantine dir (UPLOADS_DIR/
-                               # QUARANTINE_DIR or local defaults)
+        uploads.js            # resolves + creates the uploads dir, quarantine dir and thumbnails
+                               # dir (UPLOADS_DIR/QUARANTINE_DIR or local defaults)
         malwareScan.js         # wraps `clamscan`, talking to the clamav container over TCP
         scanUpload.js          # shared multer-based upload middleware: writes to the quarantine
                                 # dir, scans with malwareScan.js, only then moves the file into
                                 # uploadsDir — used by both profile.js and media.js
+        thumbnail.js            # generateImageThumbnail() — resizes an uploaded image via sharp;
+                                # used only by routes/media.js (see Architecture.md#media-thumbnails)
       middleware/
         auth.js              # requireAuth (reads tx_session cookie), requireAdmin
       oauth/
@@ -85,10 +91,12 @@ src/
         flights.js           # flights CRUD, mounted behind requireAuth
         accommodations.js    # accommodations add + assign/accept, mounted behind requireAuth
         vehicles.js          # vehicles add + assign/accept, mounted behind requireAuth
-        media.js              # media upload (scanUpload.js) + gallery listing, mounted behind requireAuth
+        media.js              # media upload (scanUpload.js + thumbnail.js) + gallery listing +
+                               # download-all zip (archiver), mounted behind requireAuth
   frontend/               # React PWA (Vite)
     package.json
-    vite.config.js         # includes vite-plugin-pwa (manifest + service worker)
+    vite.config.js         # includes vite-plugin-pwa (manifest + service worker); dev proxy for
+                            # both /api and /uploads to the backend
     index.html
     public/
       icons/                # PWA icons — the real Team Xtreme BJJ Karlsruhe club logo
@@ -125,7 +133,9 @@ src/
         SettingsPage.jsx       # edit own name + profile picture ("Profil" in the bottom nav), logout
         CalendarPage.jsx       # read-only presence/accommodation table, derived from flights + accommodations;
                                 # clicking a row's name opens a Modal with that user's ContactLinks
-        MediaPage.jsx           # upload + gallery of shared photos/videos
+        MediaPage.jsx           # upload + thumbnail-grid gallery of shared photos/videos, a
+                                # "download all" zip button, and a full-resolution Modal (with
+                                # its own download link) opened by clicking a grid item
 ```
 
 ## Backend
@@ -344,6 +354,40 @@ image, which ships with a preloaded signature database (the non-`_base` tag)
 so it doesn't need to download the full ClamAV database set on every
 container start/restart — just incremental updates.
 
+## Media thumbnails
+
+Per the spec ("the view showing the images should only show a thumbnail for
+better performance"), `routes/media.js` generates a thumbnail once an
+uploaded file clears the malware scan and lands in `uploadsDir`:
+
+- **Images**: `utils/thumbnail.js`'s `generateImageThumbnail()` uses `sharp`
+  to resize to at most 480×480 (preserving aspect ratio, never upscaling),
+  re-encoded as a JPEG, written to `uploadsDir/thumbnails/` (a subdirectory
+  of the same `uploads-data` volume, not a separate mount — served back at
+  `/uploads/thumbnails/<filename>`, see [Media storage](#media-storage)).
+  `.rotate()` respects EXIF orientation, since camera photos are frequently
+  rotated via an EXIF tag rather than in the pixels themselves. If
+  generation throws (a corrupt file, or a format `sharp`'s bundled libvips
+  can't decode) the upload still succeeds — `thumbnail_name` just stays
+  `NULL` (added in migration `005_add_media_thumbnail.sql`) and the frontend
+  falls back to the full-resolution original for that item's grid tile.
+- **Videos**: no server-side processing at all — extracting a real video
+  frame would mean adding `ffmpeg` to the image and pipeline for a feature
+  the spec only asks be "just a thumbnail with an indication that it is a
+  video." `MediaPage.jsx` renders a fixed placeholder (a video icon + a
+  "Video" badge) for any item whose `mimeType` starts with `video/`,
+  fetching zero video bytes for the grid.
+- `isImageFile()` (`utils/scanUpload.js`, alongside the existing
+  `isAcceptedMediaFile()`) reuses the same declared-MIME-type-then-extension
+  fallback to decide whether an upload is an image worth thumbnailing —
+  profile pictures don't go through this path; only `routes/media.js` does.
+
+`GET /api/media/download-all` (see [API.md](API.md#get-apimediadownload-all))
+answers the spec's "download all" button by streaming a zip of every
+original file via `archiver`, piped straight from disk to the response —
+memory usage stays flat regardless of how much media has accumulated, since
+nothing is buffered or written to a temporary zip on disk first.
+
 ## Frontend
 
 - React 18 + Vite, plain JavaScript (no TypeScript, to keep the early-stage
@@ -384,9 +428,12 @@ Two supported modes:
    Runs on Vite's dev server. The homepage itself has no API calls, but
    login/invite/logout do — a `/api` proxy to `http://localhost:8000` is
    configured in `vite.config.js`, so run the backend (below) alongside this
-   for anything auth-related to work. Password login/registration work fine
-   this way; Google/Instagram's full-page OAuth redirect isn't proxied, so
-   after completing it the browser lands on the backend's own port
+   for anything auth-related to work. `/uploads` is proxied the same way, so
+   profile pictures and shared media (Settings, Media pages) render too —
+   without it they'd 404 against Vite's own dev server, which knows nothing
+   about that path. Password login/registration work fine this way;
+   Google/Instagram's full-page OAuth redirect isn't proxied, so after
+   completing it the browser lands on the backend's own port
    (`localhost:8000`) rather than back on `5173` — use backend-only dev
    (below) instead if you need to test those end to end.
 

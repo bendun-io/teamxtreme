@@ -89,7 +89,11 @@
   margin-top: 0.5rem;
 }
 
-.helpful-link-button {
+/* "a.helpful-link-button" (not just ".helpful-link-button") so this beats
+   ".card a" above on specificity — otherwise ".card a"'s maroon text color
+   wins over this button's white text whenever it's used inside a .card
+   (as every current usage is), rendering invisible maroon-on-maroon text. */
+a.helpful-link-button {
   border: none;
   border-radius: 8px;
   padding: 0.7rem;
@@ -100,7 +104,7 @@
   text-decoration: none;
 }
 
-.helpful-link-button:hover {
+a.helpful-link-button:hover {
   background: var(--color-primary-hover);
 }
 

@@ -189,8 +189,13 @@ here and for profile pictures — is scanned by ClamAV before it's stored; see
 
 #### `GET /api/media`
 Gallery of everyone's shared photos/videos, ordered newest first.
-**200** `{ "media": [{ id, uploadedBy, uploadedByName, url, originalName, mimeType, fileSize, createdAt }] }`
-— `url` is the file's `/uploads/<filename>` path.
+**200** `{ "media": [{ id, uploadedBy, uploadedByName, url, thumbnailUrl, originalName, mimeType, fileSize, createdAt }] }`
+— `url` is the original file's `/uploads/<filename>` path (unchanged, full
+quality). `thumbnailUrl` is a generated `/uploads/thumbnails/<filename>` JPEG
+for images, used by the gallery grid instead of the original — see
+[Architecture.md](Architecture.md#media-thumbnails). `null` for videos (the
+frontend shows a fixed placeholder instead) and for an image whose thumbnail
+generation failed.
 
 #### `POST /api/media`
 Body: `multipart/form-data` with a `file` field (image or video, original
@@ -198,6 +203,13 @@ quality — no resizing/transcoding), up to 500 MB.
 **201** `{ "media": {...} }`
 **400** missing file, file isn't an image/video, exceeds the size limit, or
 it failed the malware scan (`{ "error": "file failed malware scan" }`).
+
+#### `GET /api/media/download-all`
+Streams every shared photo/video as a single zip (for the gallery's "download
+all" button), each entry named after its `originalName` (de-duplicated with
+the media id when two uploads share a name).
+**200** `application/zip`, `Content-Disposition: attachment; filename="teamxtreme-media.zip"`.
+**404** `{ "error": "no media to download" }` if nothing has been shared yet.
 
 ### Planned
 

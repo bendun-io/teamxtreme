@@ -43,6 +43,7 @@ const protectedRoutes = [
   ['GET', '/api/auth/invites'],
   ['GET', '/api/media'],
   ['POST', '/api/media'],
+  ['GET', '/api/media/download-all'],
 ];
 
 for (const [method, path] of protectedRoutes) {

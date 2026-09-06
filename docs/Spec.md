@@ -30,6 +30,7 @@ The app should be used for the team to organize travel together in a better way 
 - File uploads should run through a malware scan (ClamAV sidecar) before they are stored in an accessible manner.
 - Protect agains CSRF and XSS, especially stored XSS.
 - Protect against login brute forcing by having a failed attempt counter that is reset upon successfull login. If the counter reaches 10, block logins from the trying IP for 10 minutes.
+- There should be a github dependabot workflow for at least all package.json, Dockerfile and docker compose files to ensure regular updates.
 
 ## Test cases
 

@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # package.json (npm) — one entry per project, since they're independent
+  # (backend, frontend, and the separate tests/ package all have their own
+  # dependency sets and lockfiles).
+  - package-ecosystem: "npm"
+    directory: "/src/backend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/src/frontend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/tests"
+    schedule:
+      interval: "weekly"
+
+  # Dockerfile + docker-compose.yml (base images), one entry per directory
+  # that actually contains one — Dependabot's "docker" ecosystem scans both
+  # file types together but doesn't recurse into subdirectories.
+  - package-ecosystem: "docker"
+    directory: "/" # docker-compose.yml (production stack)
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/src" # Dockerfile
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/tests" # docker-compose.yml (disposable test Postgres/ClamAV)
+    schedule:
+      interval: "weekly"

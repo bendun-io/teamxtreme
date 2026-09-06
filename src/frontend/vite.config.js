@@ -8,7 +8,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        navigateFallbackDenylist: [/^\/api\//],
+        // /uploads/<file> is excluded too: MediaPage's/SettingsPage's
+        // <a href={url} download> links are same-origin navigations from
+        // the service worker's point of view, and without this it would
+        // intercept them and hand back the cached app shell instead of the
+        // actual file.
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
       },
       manifest: {
         name: 'TeamXtreme',
@@ -29,6 +34,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8000',
+      // Profile pictures and shared media (MediaPage, SettingsPage) are
+      // served back at /uploads/<file>, outside /api — proxy it too so
+      // they render in frontend-only dev instead of 404ing against Vite's
+      // own dev server.
+      '/uploads': 'http://localhost:8000',
     },
   },
 });

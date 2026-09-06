@@ -330,17 +330,63 @@ it's the source of truth for "what's next," not a fixed roadmap.
   asserts the new headers are present. See
   [Architecture.md](Architecture.md#csrf--xss-hardening) for details.
 
+- **Media gallery rework** — thumbnails generated at upload time, the
+  gallery showing thumbnails only, a "download all" button, and click-through
+  to a full-resolution view with its own download option. Images get a real
+  generated thumbnail; videos get a fixed placeholder rather than an
+  extracted frame (see below for why). `GET /api/media` responses gained
+  `thumbnailUrl` (`null` for videos, or for an image whose thumbnail
+  generation failed); a new `GET /api/media/download-all` streams a zip of
+  every original file. See [API.md](API.md#media) and
+  [Architecture.md](Architecture.md#media-thumbnails) for the full design.
+  Frontend: `MediaPage.jsx` rebuilt around a thumbnail grid (real thumbnails
+  for images, a fixed video-icon placeholder + "Video" badge for videos — no
+  video bytes fetched just to render the grid), a "download all" link at the
+  top of the gallery card, and clicking any item opens the existing
+  `Modal.jsx` with the full-resolution original and its own download link.
+  - **Why no video frame extraction**: the spec asks for "just a thumbnail
+    with an indication that it is a video," not a real preview frame —
+    reading that literally avoided adding `ffmpeg` (a much heavier Docker
+    image + pipeline dependency) for a feature videos don't strictly need.
+  - **New backend dependencies**: `sharp` (image resizing —
+    `utils/thumbnail.js`) and `archiver` (zip streaming, no buffering, so
+    memory use doesn't grow with how much media has accumulated). Thumbnail
+    generation is best-effort: a failure (e.g. a corrupt file) is logged and
+    leaves `thumbnail_name` `NULL` rather than failing the upload.
+  - **Found in browser verification, not covered by the API test suite**:
+    two real bugs surfaced only by actually loading the reworked page.
+    (1) `vite.config.js`'s dev proxy only covered `/api`, so profile
+    pictures and media (old and new alike) 404'd in frontend-only dev —
+    fixed by proxying `/uploads` too, and excluding it from the PWA service
+    worker's `navigateFallbackDenylist` so a same-origin `<a download>` link
+    to an uploaded file isn't intercepted and handed the cached app shell
+    instead. (2) `.card a` (specificity `0,1,1`) was silently beating
+    `.helpful-link-button` (`0,1,0`) on `color` for every button-styled
+    anchor placed inside a `.card` — which is every current usage,
+    including the pre-existing "Hilfreiche Links" WhatsApp/Leo Galati
+    buttons on the homepage — rendering maroon text on a maroon background.
+    Fixed by renaming the selector to `a.helpful-link-button` (same
+    specificity as `.card a`, so source order — which already put it later
+    in `App.css` — now correctly wins).
+  - Tests: `tests/api/media.test.js` gained cases for thumbnail generation
+    (image and video), the zip endpoint's headers/content and its 404 on an
+    empty gallery; `tests/security/unauthenticated.test.js` covers
+    `download-all` alongside every other authenticated route.
+
+- **Dependabot** — the spec picked up a new requirement mid-session
+  ("a github dependabot workflow for at least all package.json, Dockerfile
+  and docker compose files"). `.github/dependabot.yml`: weekly `npm`
+  version-update checks for each of the three independent `package.json`s
+  (`src/backend`, `src/frontend`, `tests` — separate dependency sets and
+  lockfiles), plus weekly `docker` checks in every directory holding a
+  `Dockerfile`/`docker-compose.yml` (repo root, `src/`, `tests/`). No app
+  code changes.
+
 ## Next unfinished item
 
-**Media gallery rework** — thumbnails generated at upload time (for both
-images and videos, videos additionally marked so they're visually
-distinguishable from photos in the grid), the gallery showing thumbnails
-only, a "download all" button, and click-through to a full-resolution view
-with its own download option. Needs an image/video processing step in the
-upload pipeline (`routes/media.js`, `utils/scanUpload.js`), new storage for
-thumbnails, and a `MediaPage.jsx` rework — the largest, most UI-heavy piece
-remaining.
-
-Beyond that, and swapping the placeholder WhatsApp group link in
-`HomePage.jsx`'s "Hilfreiche Links" card for the real invite link once it's
-available, nothing else is outstanding from `docs/Spec.md`.
+Nothing is currently outstanding from `docs/Spec.md` beyond swapping the
+placeholder WhatsApp group link in `HomePage.jsx`'s "Hilfreiche Links" card
+for the real invite link once it's available (blocked on that link existing,
+not on any further implementation work). Worth a fresh read-through of
+`docs/Spec.md` against the running app next time to confirm nothing's been
+missed, rather than assuming this list is exhaustive.

@@ -35,6 +35,16 @@ export function isAcceptedMediaFile(file, { image = true, video = true } = {}) {
   return false;
 }
 
+// Same declared-type-then-extension logic as isAcceptedMediaFile(), but
+// answering "is this specifically an image" (as opposed to a video) — used
+// by routes/media.js to decide whether a thumbnail should be generated.
+export function isImageFile(file) {
+  const type = file.mimetype || '';
+  if (type.startsWith('image/') && !DANGEROUS_IMAGE_TYPES.has(type)) return true;
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
 // quarantineDir and uploadsDir aren't guaranteed to be on the same
 // filesystem — in production, uploadsDir is the `uploads-data` Docker
 // volume while quarantineDir is a plain directory on the container's own

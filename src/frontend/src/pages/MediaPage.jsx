@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Modal from '../components/Modal.jsx';
 import './MediaPage.css';
 
 function formatDate(value) {
@@ -11,10 +12,43 @@ function formatSize(bytes) {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+// Videos show a fixed placeholder in the grid rather than a generated
+// thumbnail (see docs/Spec.md: "just a thumbnail with an indication that it
+// is a video") — no per-video processing, and no video bytes are fetched
+// just to render the grid.
+function VideoIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="2.5" y="5.5" width="14" height="13" rx="2" />
+      <path d="m16.5 10 5-3v10l-5-3" />
+    </svg>
+  );
+}
+
+function MediaThumb({ item }) {
+  if (item.mimeType.startsWith('video/')) {
+    return (
+      <div className="media-thumb media-thumb-video">
+        <VideoIcon />
+        <span className="media-thumb-badge">Video</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={item.thumbnailUrl || item.url}
+      alt={item.originalName}
+      className="media-thumb"
+      loading="lazy"
+    />
+  );
+}
+
 function MediaPage() {
   const [media, setMedia] = useState([]);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [selected, setSelected] = useState(null);
   const fileInputRef = useRef(null);
 
   async function loadMedia() {
@@ -75,16 +109,30 @@ function MediaPage() {
         </section>
 
         <section className="card">
-          <h2>Alle Fotos &amp; Videos</h2>
+          <div className="media-section-header">
+            <h2>Alle Fotos &amp; Videos</h2>
+            {media.length > 0 && (
+              <a
+                href="/api/media/download-all"
+                className="helpful-link-button media-download-all"
+                download
+              >
+                Alle herunterladen
+              </a>
+            )}
+          </div>
           {media.length === 0 && <p className="placeholder">Noch nichts geteilt.</p>}
           <ul className="media-grid">
             {media.map((item) => (
               <li key={item.id} className="media-item">
-                {item.mimeType.startsWith('video/') ? (
-                  <video src={item.url} controls className="media-thumb" />
-                ) : (
-                  <img src={item.url} alt={item.originalName} className="media-thumb" />
-                )}
+                <button
+                  type="button"
+                  className="media-thumb-button"
+                  onClick={() => setSelected(item)}
+                  aria-label={`${item.originalName} in voller Auflösung anzeigen`}
+                >
+                  <MediaThumb item={item} />
+                </button>
                 <div className="media-meta">
                   <span>{item.uploadedByName}</span>
                   <span>
@@ -96,6 +144,19 @@ function MediaPage() {
           </ul>
         </section>
       </main>
+
+      {selected && (
+        <Modal title={selected.originalName} onClose={() => setSelected(null)}>
+          {selected.mimeType.startsWith('video/') ? (
+            <video src={selected.url} controls autoPlay className="media-modal-content" />
+          ) : (
+            <img src={selected.url} alt={selected.originalName} className="media-modal-content" />
+          )}
+          <a href={selected.url} download={selected.originalName} className="helpful-link-button media-modal-download">
+            Herunterladen
+          </a>
+        </Modal>
+      )}
     </div>
   );
 }

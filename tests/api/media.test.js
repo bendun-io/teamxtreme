@@ -173,6 +173,82 @@ test('POST /api/media accepts a photo whose browser omitted the MIME type, based
   assert.equal(res.status, 201);
 });
 
+test('POST /api/media generates a thumbnail for an image and serves it back', async () => {
+  // The synthetic 1x1 pngBytes fixture used elsewhere in this file is
+  // minimal enough that libpng (via sharp) rejects it as corrupt, even
+  // though it's fine for tests that only ever round-trip it as opaque
+  // bytes — use a real PNG here, same as the byte-for-byte test above.
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media9@test.local',
+    password: 'pw123456',
+    name: 'Uploader',
+  });
+
+  const iconPath = path.join(__dirname, '../../src/frontend/public/icons/icon-192.png');
+  const iconBytes = await readFile(iconPath);
+
+  const form = new FormData();
+  form.set('file', new Blob([iconBytes], { type: 'image/png' }), 'photo.png');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 201);
+  assert.ok(res.body.media.thumbnailUrl, 'expected a generated thumbnailUrl');
+  assert.ok(res.body.media.thumbnailUrl.startsWith('/uploads/thumbnails/'));
+
+  const thumbRes = await client.get(res.body.media.thumbnailUrl);
+  assert.equal(thumbRes.status, 200);
+});
+
+test('POST /api/media does not generate a thumbnail for a video', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media10@test.local',
+    password: 'pw123456',
+    name: 'Uploader',
+  });
+
+  const form = new FormData();
+  form.set('file', new Blob([Buffer.from('not a real video, just bytes')], { type: 'video/mp4' }), 'clip.mp4');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.media.thumbnailUrl, null);
+});
+
+test('GET /api/media/download-all zips every shared file together', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media11@test.local',
+    password: 'pw123456',
+    name: 'Uploader',
+  });
+
+  const form1 = new FormData();
+  form1.set('file', new Blob([pngBytes], { type: 'image/png' }), 'first.png');
+  await client.post('/api/media', undefined, { formData: form1 });
+  const form2 = new FormData();
+  form2.set('file', new Blob([pngBytes], { type: 'image/png' }), 'second.png');
+  await client.post('/api/media', undefined, { formData: form2 });
+
+  const res = await fetch(`${baseUrl}/api/media/download-all`, { headers: { cookie: client.cookie } });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'application/zip');
+  assert.match(res.headers.get('content-disposition') || '', /attachment/);
+
+  const bytes = Buffer.from(await res.arrayBuffer());
+  assert.ok(bytes.length > 0);
+  // "PK\x03\x04" is the zip local-file-header magic — enough to confirm this
+  // is actually a zip stream without needing a full unzip dependency.
+  assert.equal(bytes.subarray(0, 2).toString(), 'PK');
+});
+
+test('GET /api/media/download-all returns 404 when nothing has been shared yet', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media12@test.local',
+    password: 'pw123456',
+    name: 'Uploader',
+  });
+
+  const res = await client.get('/api/media/download-all');
+  assert.equal(res.status, 404);
+});
+
 test('POST /api/media rejects an SVG even though its MIME type starts with image/', async () => {
   // SVG is an XML document that can carry a <script> — unlike a raster
   // photo, a browser navigated straight to the stored file (not just an
