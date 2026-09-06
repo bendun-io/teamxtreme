@@ -9,6 +9,7 @@
 - The app's user interace does not need to be multi lingual. Hardcoded German texts and symbols are enough.
 - Sessions should be managed through JWT tokens.
 - Uploaded media should be stored in a mounted volume.
+- The database migrations should be idempotent, i.e., running them again on an existing database should lead to the same outcome.
 
 ## General Purpose
 
