@@ -31,8 +31,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-teamxtreme}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-teamxtreme}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
