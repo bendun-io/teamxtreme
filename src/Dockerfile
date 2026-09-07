@@ -1,5 +1,5 @@
 # ---- Frontend build ----
-FROM node:20-alpine AS frontend-build
+FROM node:26-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---- Backend ----
-FROM node:20-alpine AS backend
+FROM node:26-alpine AS backend
 WORKDIR /app
 # ffmpeg: extracts a frame from uploaded videos for their gallery thumbnail
 # (see utils/thumbnail.js's generateVideoThumbnail() / Architecture.md#media-thumbnails)
