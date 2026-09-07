@@ -563,7 +563,11 @@ uploaded file clears the malware scan and lands in `uploadsDir`:
   `apk add ffmpeg` in the backend stage; for [local dev](#local-development)
   without Docker, it must be separately installed and on `PATH`, same
   category of external dependency as `clamav` (see
-  [Malware scanning](#malware-scanning)).
+  [Malware scanning](#malware-scanning)). `ubuntu-latest` GitHub Actions
+  runners do **not** ship it preinstalled either — found out by a first
+  version of this feature's own new test breaking CI with `spawn ffmpeg
+  ENOENT` — so `.github/workflows/tests.yml` installs it via `apt-get`
+  before `npm test` runs (see [Testing](#testing)).
 - Same failure-tolerance as images: if `ffmpeg` is missing, the seek lands
   past a very short clip's duration, the codec is one `ffmpeg`'s build
   doesn't support, or the extracted frame is otherwise corrupt,
@@ -860,7 +864,9 @@ runs `npm test` — its `pretest` script already handles bringing up
 `tests/docker-compose.yml`'s containers and waiting for them to be healthy,
 so the workflow itself only adds a teardown step afterwards. GitHub Actions'
 `ubuntu-latest` runners ship Docker and the `docker compose` plugin
-preinstalled, so no extra setup step is needed for that.
+preinstalled, so no extra setup step is needed for that — `ffmpeg` (see
+[Media thumbnails](#media-thumbnails)) is a separate story: the workflow
+installs it explicitly via `apt-get` since it's *not* preinstalled.
 
 ## `add-user` script
 
