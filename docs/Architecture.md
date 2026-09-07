@@ -140,6 +140,10 @@ src/
                                # close); used by CalendarPage's contact overlay, reusable elsewhere
         ContactLinks.jsx       # renders a user's mailto/tel/wa.me/instagram links from
                                 # {email, phone, instagramHandle}, skipping any that are unset
+        MediaThumb.jsx          # renders one media item's thumbnail (generated image/video frame,
+                                 # or a placeholder "Video" icon when generation failed) — shared by
+                                 # MediaPage.jsx's gallery grid and HomePage.jsx's recent-uploads
+                                 # preview, see "Homepage recent media preview" below
         ResourceList.css        # shared "add form + list of items with per-owner actions"
                                  # styling for a flat, single-owner resource (no assignments) —
                                  # used by FlightsPage and ActivitiesPage; the richer
@@ -161,9 +165,12 @@ src/
                                  # WhatsApp link)
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list);
                                 # also the app-wide "share" button (Web Share API, clipboard
-                                # fallback) overlaid on the header image, and the "Offene
+                                # fallback) overlaid on the header image, the "Offene
                                 # Aufgaben" open-tasks card (computed client-side from the
-                                # caller's own flights/accommodations, hidden when empty)
+                                # caller's own flights/accommodations, hidden when empty), the
+                                # travel info card's flight-buddy lists, and the photos & videos
+                                # card's two-most-recent-thumbnails preview — see "Homepage
+                                # flight buddies" and "Homepage recent media preview" below
         FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights;
                                 # clicking a flight's owner name opens the shared contact-overlay
                                 # Modal, same as Calendar/Vehicles
@@ -614,6 +621,54 @@ table), so a fetch-on-mount alone wouldn't reflect an upload made on
 separate route branches, see `App.jsx`), so the badge briefly refetches from
 0 when crossing between a regular page and an admin page — acceptable since
 it resolves in one round trip and admin pages don't otherwise show media.
+
+## Homepage recent media preview
+
+Per docs/Spec.md's "Starting Page" section ("the photos and videos card
+should show the two most recent thumbnails between the title and the link to
+the sharing"), `HomePage.jsx`'s "Fotos & Videos" card fetches
+`GET /api/media/recent` (`routes/media.js` / `db/media.js`'s
+`listRecentMedia(2)`, a `LIMIT 2` query — same "dedicated lighter query"
+reasoning as [Media count badge](#media-count-badge)'s `/count`, rather than
+reusing `GET /api/media`'s full listing just to slice it client-side) and
+renders the result between the `<h2>` and the "ansehen / teilen" link, hidden
+entirely when nothing has been shared yet.
+
+The per-item thumbnail rendering (a generated image thumbnail; a generated
+video frame with its baked-in play-button overlay; or, if generation failed,
+a placeholder video icon with a "Video" badge) was previously inlined in
+`MediaPage.jsx`'s gallery grid only — extracted into a shared
+`components/MediaThumb.jsx` (+ `MediaThumb.css`, moved out of
+`MediaPage.css`) so both pages render an item identically instead of
+duplicating the video/image branching logic.
+
+## Homepage flight buddies
+
+Per docs/Spec.md's "Starting Page" section ("[the travel info card] should
+also include a list of people that are on the same flight to the training
+camp and a list of people that are on the same flight back"), `HomePage.jsx`
+computes, from the `GET /api/flights` response it already fetches for the
+open-tasks card, two more lists for the caller: everyone else whose outbound
+leg matches theirs, and everyone else whose return leg matches theirs.
+
+- **Leg extraction** (`buildFlightLegs()`): reuses the same earliest-flight-
+  is-outbound/latest-flight-is-return convention as `CalendarPage.jsx` and
+  this file's own `computeOpenTasks()` — a user's *outbound leg* is their
+  earliest flight's arrival (airport + time), and their *return leg* (only
+  once a second flight is on file) is their latest flight's departure
+  (airport + time). A leg is omitted if the relevant flight is missing the
+  airport/time fields entirely (a defensive check, not expected in practice
+  since both are required on `POST /api/flights`).
+- **Matching** (`findFlightBuddies()`): per the spec's explicit "not too
+  specific" wording, two legs count as "the same flight" when they share an
+  airport (`arrivalAirport` for outbound, `departureAirport` for return) and
+  their times are within 3 hours of each other — not necessarily the same
+  flight number, so two people who happen to book different flights landing
+  around the same time still see each other. Matches exclude the caller
+  themself and are sorted alphabetically by name.
+- **No new backend route**: computed entirely client-side from data the
+  homepage already fetches, same pattern as the open-tasks card and
+  `CalendarPage.jsx`.
 
 ## Accommodation capacity
 

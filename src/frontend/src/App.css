@@ -108,6 +108,33 @@ a.helpful-link-button:hover {
   background: var(--color-primary-hover);
 }
 
+.flight-buddies {
+  margin-top: 0.75rem;
+}
+
+.flight-buddies h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.flight-buddies ul {
+  margin: 0.25rem 0 0;
+}
+
+.home-media-preview {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.home-media-preview li {
+  width: 88px;
+}
+
 .task-list {
   list-style: none;
   margin: 0.5rem 0 0;

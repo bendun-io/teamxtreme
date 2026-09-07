@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
+import MediaThumb from '../components/MediaThumb.jsx';
 import '../App.css';
+
+const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 
 const packingList = [
   'Reisepass / Personalausweis',
@@ -38,11 +41,69 @@ function computeOpenTasks(userId, flights, accommodations) {
   return tasks;
 }
 
+// One entry per user with a flight logged: their "outbound leg" (arrival at
+// the destination, from their earliest flight by departure time — same
+// earliest/latest convention as CalendarPage.jsx/computeOpenTasks() above)
+// and, once a second flight is on file, their "return leg" (departure from
+// the destination, from their latest flight). Either leg is omitted if the
+// relevant flight's airport/time fields aren't set.
+function buildFlightLegs(flights) {
+  const byUser = new Map();
+  for (const flight of flights) {
+    if (!byUser.has(flight.userId)) byUser.set(flight.userId, []);
+    byUser.get(flight.userId).push(flight);
+  }
+
+  const legs = [];
+  for (const [userId, userFlights] of byUser) {
+    const sorted = [...userFlights].sort(
+      (a, b) => new Date(a.departureTime) - new Date(b.departureTime)
+    );
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    legs.push({
+      userId,
+      userName: first.userName,
+      outbound:
+        first.arrivalAirport && first.arrivalTime
+          ? { airport: first.arrivalAirport, time: new Date(first.arrivalTime) }
+          : null,
+      return:
+        sorted.length > 1 && last.departureAirport && last.departureTime
+          ? { airport: last.departureAirport, time: new Date(last.departureTime) }
+          : null,
+    });
+  }
+  return legs;
+}
+
+// Per docs/Spec.md's "Starting Page" section: two flights count as "the
+// same flight" if they share an airport and land within +/-3 hours of each
+// other — not necessarily the same flight number. Returns the names of
+// every other user matching the given user's leg, sorted alphabetically.
+function findFlightBuddies(userId, legs, legKey) {
+  const mine = legs.find((l) => l.userId === userId)?.[legKey];
+  if (!mine) return [];
+  return legs
+    .filter(
+      (l) =>
+        l.userId !== userId &&
+        l[legKey] &&
+        l[legKey].airport === mine.airport &&
+        Math.abs(l[legKey].time - mine.time) <= THREE_HOURS_MS
+    )
+    .map((l) => l.userName)
+    .sort((a, b) => a.localeCompare(b, 'de'));
+}
+
 function HomePage() {
   const { user } = useAuth();
   const [shareFeedback, setShareFeedback] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [whatsappLink, setWhatsappLink] = useState(null);
+  const [outboundBuddies, setOutboundBuddies] = useState([]);
+  const [returnBuddies, setReturnBuddies] = useState([]);
+  const [recentMedia, setRecentMedia] = useState([]);
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +115,10 @@ function HomePage() {
       const flights = flightsRes.ok ? (await flightsRes.json()).flights : [];
       const accommodations = accommodationsRes.ok ? (await accommodationsRes.json()).accommodations : [];
       setTasks(computeOpenTasks(user.id, flights, accommodations));
+
+      const legs = buildFlightLegs(flights);
+      setOutboundBuddies(findFlightBuddies(user.id, legs, 'outbound'));
+      setReturnBuddies(findFlightBuddies(user.id, legs, 'return'));
     }
     loadTasks();
 
@@ -65,6 +130,15 @@ function HomePage() {
       }
     }
     loadSettings();
+
+    async function loadRecentMedia() {
+      const res = await fetch('/api/media/recent', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setRecentMedia(data.media);
+      }
+    }
+    loadRecentMedia();
   }, [user]);
 
   async function handleShare() {
@@ -143,6 +217,26 @@ function HomePage() {
           <p>
             Nächstgelegener Flughafen: <strong>Málaga (AGP)</strong>
           </p>
+          {outboundBuddies.length > 0 && (
+            <div className="flight-buddies">
+              <h3>Gleicher Hinflug</h3>
+              <ul>
+                {outboundBuddies.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {returnBuddies.length > 0 && (
+            <div className="flight-buddies">
+              <h3>Gleicher Rückflug</h3>
+              <ul>
+                {returnBuddies.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <Link to="/flights">Flüge ansehen / eintragen →</Link>
           <br />
           <Link to="/accommodations">Unterkünfte ansehen / eintragen →</Link>
@@ -159,6 +253,15 @@ function HomePage() {
 
         <section className="card">
           <h2>Fotos &amp; Videos</h2>
+          {recentMedia.length > 0 && (
+            <ul className="home-media-preview">
+              {recentMedia.map((item) => (
+                <li key={item.id}>
+                  <MediaThumb item={item} />
+                </li>
+              ))}
+            </ul>
+          )}
           <Link to="/media">Fotos &amp; Videos ansehen / teilen →</Link>
         </section>
 

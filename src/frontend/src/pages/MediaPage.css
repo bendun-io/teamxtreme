@@ -47,35 +47,6 @@
   cursor: pointer;
 }
 
-.media-thumb {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 8px;
-  background: var(--color-bg);
-}
-
-.media-thumb-video {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-}
-
-.media-thumb-badge {
-  position: absolute;
-  left: 0.4rem;
-  bottom: 0.4rem;
-  background: rgba(0, 0, 0, 0.6);
-  color: #ffffff;
-  border-radius: 4px;
-  padding: 0.1rem 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
 .media-meta {
   display: flex;
   flex-direction: column;
