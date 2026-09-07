@@ -145,6 +145,22 @@
   color: var(--color-text-muted);
 }
 
+.resource-owner-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: inherit;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.resource-owner-button:hover {
+  text-decoration-color: currentColor;
+}
+
 .resource-item-actions {
   display: flex;
   gap: 0.6rem;

@@ -157,7 +157,9 @@ src/
                                 # fallback) overlaid on the header image, and the "Offene
                                 # Aufgaben" open-tasks card (computed client-side from the
                                 # caller's own flights/accommodations, hidden when empty)
-        FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights
+        FlightsPage.jsx        # add/edit/delete own flight, overview of everyone's flights;
+                                # clicking a flight's owner name opens the shared contact-overlay
+                                # Modal, same as Calendar/Vehicles
         AccommodationsPage.jsx # add accommodation, assign self/others, accept an assignment
         VehiclesPage.jsx       # add a ride (start/end point, departure time, seats/details), assign
                                 # self/others, accept an assignment; creator's name opens the shared
@@ -572,6 +574,22 @@ current moment; and the list only ever shows ongoing or future activities.
   layout) rather than introducing its own — its add-form-plus-flat-list
   shape is the same as Flights', just without the edit form/fields being
   flight-specific.
+
+## Flights overview contact overlay
+
+Per docs/Spec.md's "Core information sharing" section ("The name of the
+person in the overview should be clickable and show the user overlay"),
+`FlightsPage.jsx` now fetches `GET /api/users` (it previously didn't need
+to) and renders each flight's `userName` as a button
+(`.resource-owner-button`, a new rule in `components/ResourceList.css`
+mirroring `AssignableList.css`'s `.assignable-owner-button` and
+`CalendarPage.css`'s `.calendar-name-button` — three near-identical button
+styles rather than one shared class, since each lives in a different
+page-family's stylesheet and pulling them into one file would only save a
+few lines at the cost of an extra cross-file dependency) that opens the same
+`components/Modal.jsx` + `components/ContactLinks.jsx` overlay Calendar and
+Vehicles already use. No backend changes — `GET /api/users` already
+returned every contact field.
 
 ## Vehicles / ride sharing
 
