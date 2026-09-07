@@ -7,3 +7,6 @@ src/backend/uploads
 src/backend/quarantine
 tests/.tmp-uploads
 tests/.tmp-quarantine
+# saved add-user.js input files contain a real (or placeholder) email and a
+# generated password — never commit these
+tests/scripts/output

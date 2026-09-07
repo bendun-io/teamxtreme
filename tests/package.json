@@ -5,7 +5,8 @@
   "scripts": {
     "pretest": "docker compose up -d --wait",
     "test": "node --env-file=.env.test --test --test-concurrency=1",
-    "down": "docker compose down"
+    "down": "docker compose down",
+    "add-user": "node --env-file=../.env scripts/add-user.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3"
