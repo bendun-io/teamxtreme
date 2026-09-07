@@ -29,6 +29,9 @@ local UI development.
 .github/
   dependabot.yml           # weekly version-update checks for every package.json, Dockerfile
                             # and docker-compose.yml (see docs/Spec.md's "Security" section)
+  workflows/
+    tests.yml               # runs the tests/ suite (docker compose up --wait, npm test) on
+                             # every pull request — see docs/Spec.md's "Test cases" section
 docker-compose.yml       # orchestrates teamxtreme-server, postgres, cloudflared
 .env                      # secrets/config for docker-compose (not committed)
 .env.example              # documents every var .env needs
@@ -729,6 +732,16 @@ routes, cross-user ownership checks). See [tests/README.md](../tests/README.md)
 for details. This is also why the Express app is split into `app.js`
 (exported, no `.listen()`) and `index.js` (the process entry point) — tests
 import `app.js` directly and mount it on an ephemeral port.
+
+Per docs/Spec.md's "Test cases" section, `.github/workflows/tests.yml` runs
+this same suite on every pull request: it installs `src/backend`'s
+dependencies (`tests/` imports `app.js` and `db/*` directly, so it needs
+those resolvable from `src/backend/node_modules`) and `tests/`'s own, then
+runs `npm test` — its `pretest` script already handles bringing up
+`tests/docker-compose.yml`'s containers and waiting for them to be healthy,
+so the workflow itself only adds a teardown step afterwards. GitHub Actions'
+`ubuntu-latest` runners ship Docker and the `docker compose` plugin
+preinstalled, so no extra setup step is needed for that.
 
 ## Deployment
 

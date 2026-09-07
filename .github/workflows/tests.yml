@@ -1,0 +1,46 @@
+name: Tests
+
+# Per docs/Spec.md's "Test cases" section: run the tests/ suite (API +
+# security tests, node --test against the real Express app and disposable
+# Postgres/ClamAV containers) on every pull request.
+on:
+  pull_request:
+
+jobs:
+  backend-tests:
+    name: Backend API + security tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            src/backend/package-lock.json
+            tests/package-lock.json
+
+      # tests/ imports src/backend/src/app.js and its db/* modules directly,
+      # so it needs the backend's own dependencies (express, pg, ...)
+      # resolvable from src/backend/node_modules — see tests/README.md.
+      - name: Install backend dependencies
+        working-directory: src/backend
+        run: npm ci
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm ci
+
+      # `npm test`'s pretest script (docker compose up -d --wait) brings up
+      # the disposable postgres-test/clamav-test containers defined in
+      # tests/docker-compose.yml and waits for both to be healthy.
+      - name: Run test suite
+        working-directory: tests
+        run: npm test
+
+      - name: Tear down test containers
+        if: always()
+        working-directory: tests
+        run: npm run down
