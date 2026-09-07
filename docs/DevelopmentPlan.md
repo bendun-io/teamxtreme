@@ -818,12 +818,51 @@ it's the source of truth for "what's next," not a fixed roadmap.
   [API.md](API.md#get-apimedia) and
   [Architecture.md](Architecture.md#media-thumbnails) for the full design.
 
+- **Homepage flight buddies and recent media preview** — `docs/Spec.md`'s
+  "Starting Page" section picked up two new sentences mid-session: the
+  travel info card should list people on the same flight to camp / same
+  flight back (same airport, time within +/-3 hours), and the photos &
+  videos card should show its two most recent thumbnails between the title
+  and the sharing link. Neither existed — the travel info card had no
+  flight-buddy lists, and the photos & videos card was link-only.
+
+  Frontend only, no schema changes: `HomePage.jsx` gained `buildFlightLegs()`
+  (per user, their outbound leg = earliest flight's arrival airport/time,
+  return leg = latest flight's departure airport/time, once a second flight
+  exists — mirrors `CalendarPage.jsx`'s existing earliest/latest convention)
+  and `findFlightBuddies()` (two legs "match" if same airport and within 3
+  hours, per the spec's explicit "not too specific" wording — not
+  necessarily the same flight number), computed client-side from the
+  `GET /api/flights` response the open-tasks card already fetches. The
+  photos & videos card fetches a new `GET /api/media/recent`
+  (`db/media.js`'s `listRecentMedia(2)`, a `LIMIT 2` query — same
+  "dedicated lighter query" reasoning as the media-count badge's `/count`)
+  and renders the two items via a `MediaThumb` component extracted out of
+  `MediaPage.jsx`'s gallery grid (+ `MediaThumb.css`, moved out of
+  `MediaPage.css`) so both pages render a thumbnail (image, video frame, or
+  the video-icon placeholder when generation failed) identically instead of
+  duplicating that branching. See
+  [Architecture.md](Architecture.md#homepage-flight-buddies) and
+  [Architecture.md](Architecture.md#homepage-recent-media-preview) for the
+  full design, [API.md](API.md#get-apimediarecent) for the new endpoint.
+
+  Tests: `tests/api/media.test.js` gained a case for `/recent` (empty list,
+  then the two newest of three uploads, newest first);
+  `tests/security/unauthenticated.test.js` gained the route. 143 tests
+  total, all passing. Verified with a full local login-and-screenshot pass
+  (Playwright driving the Vite dev server against the disposable test
+  Postgres/ClamAV containers): seeded an admin and a second user with
+  matching outbound/return flights (same airport, ~1.5-1.75h apart) via the
+  real API, uploaded two photos, then loaded the homepage as the admin —
+  both "Gleicher Hinflug"/"Gleicher Rückflug" lists show the second user's
+  name, and the photos & videos card shows two thumbnails; no console
+  errors beyond the expected pre-login `/api/auth/me` 401s.
+
 ## Next unfinished item
 
-No implementation gap remains open — the two items directly above were the
-most recent ones found (a `docs/Spec.md` line for admin user deletion, and a
-closer read of the media-sharing section's two adjacent video-thumbnail
-sentences).
+No implementation gap remains open — the item directly above was the most
+recent one found (two new `docs/Spec.md` sentences in the "Starting Page"
+section: homepage flight buddies and the recent-media preview).
 
 The WhatsApp group link previously tracked here as "still outstanding" is
 **not actually a gap**: `AdminSettingsPage.jsx`/`PATCH /api/admin/settings`

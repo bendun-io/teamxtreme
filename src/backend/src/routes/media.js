@@ -5,7 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadMiddleware, isAcceptedMediaFile, isImageFile, isVideoFile } from '../utils/scanUpload.js';
 import { generateImageThumbnail, generateVideoThumbnail } from '../utils/thumbnail.js';
 import { uploadsDir } from '../utils/uploads.js';
-import { listMedia, createMedia, countMedia } from '../db/media.js';
+import { listMedia, createMedia, countMedia, listRecentMedia } from '../db/media.js';
 
 const uploadMedia = uploadMiddleware({
   fieldName: 'file',
@@ -51,6 +51,15 @@ router.get('/', asyncHandler(async (req, res) => {
 // '/' and '/download-all' doesn't matter (none of these use a wildcard).
 router.get('/count', asyncHandler(async (req, res) => {
   res.json({ count: await countMedia() });
+}));
+
+// For the homepage's photos & videos card (see docs/Spec.md's "Starting
+// Page" section: "should show the two most recent thumbnails") — same
+// reasoning as '/count' above, a dedicated lighter query rather than
+// reusing GET /api/media's full listing.
+router.get('/recent', asyncHandler(async (req, res) => {
+  const media = await listRecentMedia(2);
+  res.json({ media: media.map(publicMedia) });
 }));
 
 // Streams every shared photo/video as a single zip, for the gallery's

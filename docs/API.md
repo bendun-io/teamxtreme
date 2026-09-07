@@ -261,6 +261,12 @@ a lighter query than `GET /api/media` for something fetched on every
 authenticated page.
 **200** `{ "count": N }`
 
+#### `GET /api/media/recent`
+The two most recent uploads (same shape as `GET /api/media`'s entries), for
+the homepage's photos & videos card.
+**200** `{ "media": [{ id, uploadedBy, uploadedByName, url, thumbnailUrl, originalName, mimeType, fileSize, createdAt }] }`
+— empty array if nothing has been shared yet.
+
 #### `GET /api/media/download-all`
 Streams every shared photo/video as a single zip (for the gallery's "download
 all" button), each entry named after its `originalName` (de-duplicated with

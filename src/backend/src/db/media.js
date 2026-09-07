@@ -20,6 +20,14 @@ export async function countMedia() {
   return rows[0].count;
 }
 
+// For the homepage's photos & videos card, which only ever shows the two
+// most recent thumbnails — a LIMIT query rather than fetching listMedia()'s
+// full gallery just to slice it client-side.
+export async function listRecentMedia(limit) {
+  const { rows } = await pool.query(`${SELECT_MEDIA} ORDER BY m.created_at DESC LIMIT $1`, [limit]);
+  return rows;
+}
+
 export async function findMediaById(id) {
   const { rows } = await pool.query(`${SELECT_MEDIA} WHERE m.id = $1`, [id]);
   return rows[0] || null;

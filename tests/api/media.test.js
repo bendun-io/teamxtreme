@@ -269,6 +269,30 @@ test('GET /api/media/count reflects the number of shared files', async () => {
   assert.equal(res.body.count, 2);
 });
 
+test('GET /api/media/recent returns at most the two most recent uploads, newest first', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media14@test.local',
+    password: 'pw123456',
+    name: 'Recent Uploader',
+  });
+
+  const emptyRes = await client.get('/api/media/recent');
+  assert.equal(emptyRes.status, 200);
+  assert.deepEqual(emptyRes.body.media, []);
+
+  for (const name of ['first.png', 'second.png', 'third.png']) {
+    const form = new FormData();
+    form.set('file', new Blob([pngBytes], { type: 'image/png' }), name);
+    await client.post('/api/media', undefined, { formData: form });
+  }
+
+  const res = await client.get('/api/media/recent');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.media.length, 2);
+  assert.equal(res.body.media[0].originalName, 'third.png');
+  assert.equal(res.body.media[1].originalName, 'second.png');
+});
+
 test('GET /api/media/download-all zips every shared file together', async () => {
   const { client } = await loginAsNewUser(baseUrl, {
     email: 'media11@test.local',
