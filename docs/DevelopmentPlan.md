@@ -657,33 +657,51 @@ it's the source of truth for "what's next," not a fixed roadmap.
   built here, to keep this PR scoped to one thing — see "Next unfinished
   item" below.
 
+- **Flights overview contact overlay** — `docs/Spec.md`'s "Core information
+  sharing" section says of the flights overview: "The name of the person in
+  the overview should be clickable and show the user overlay" — the same
+  `Modal.jsx`/`ContactLinks.jsx` pattern `CalendarPage.jsx` and (as of a
+  previous session) `VehiclesPage.jsx` already use. `FlightsPage.jsx` used
+  to render `flight.userName` as plain text (`<span className="resource-
+  owner">`), with no overlay and no fetch of `GET /api/users` at all.
+
+  Frontend only, no backend changes (`GET /api/users` already returned every
+  contact field): `FlightsPage.jsx` now fetches `GET /api/users` on mount,
+  builds a `usersById` lookup, and renders each flight's owner name as a
+  button (`.resource-owner-button`, new in `components/ResourceList.css`,
+  styled the same way as `AssignableList.css`'s `.assignable-owner-button`
+  and `CalendarPage.css`'s `.calendar-name-button`) that opens the shared
+  `Modal`/`ContactLinks` overlay. `ActivitiesPage.jsx` keeps its existing
+  plain-text `.resource-owner` for its creator name unchanged — the spec
+  only asks for a clickable overlay on Flights/Vehicles/Calendar, not
+  Activities. Full reasoning in
+  [Architecture.md](Architecture.md#flights-overview-contact-overlay).
+
+  Verified with a full local click-through (Playwright driving the Vite dev
+  server against the disposable test Postgres/ClamAV containers, on a
+  freshly-migrated database to also confirm all 9 migrations still apply
+  cleanly in order): added a flight via the real form, clicked the owner's
+  name in the overview, confirmed the contact modal opens with the correct
+  name and a working mailto link. No backend change, so the existing 132
+  backend tests are unaffected (not re-run for this change beyond the
+  `npm run build` frontend check).
+
 ## Next unfinished item
 
-Two gaps found this session, not yet built:
+One gap found in the previous session, not yet built:
 
-1. **Flights overview: name not clickable.** `docs/Spec.md`'s "Core
-   information sharing" section says of the flights overview: "The name of
-   the person in the overview should be clickable and show the user
-   overlay" — the same `Modal.jsx`/`ContactLinks.jsx` pattern
-   `CalendarPage.jsx` and (as of the previous session) `VehiclesPage.jsx`
-   already use. `FlightsPage.jsx` currently renders `flight.userName` as
-   plain text (`<span className="resource-owner">`), not a button. This is
-   the smallest of the two — `FlightsPage.jsx` doesn't currently fetch
-   `GET /api/users` at all, so it would need that added (for the contact
-   fields) alongside the same `Modal`/`ContactLinks` wiring already proven
-   twice elsewhere.
-2. **No admin CLI script for adding a test user.** `docs/Spec.md`'s "Test
-   cases" section asks for "a script for testing that takes from .env the
-   admin credentials and asks questions to add a user ... name, email
-   (optional), phone (optional), instagram handle (optional), arrival flight
-   information, departing flight information, accommodation (either select
-   an existing or adding one) ... create a file specifying the input (for
-   re-use) and create the entry in the deployed system corresponding via
-   http requests." Nothing like this exists yet — it's a larger, standalone
-   piece of tooling (interactive prompts, admin login, invite creation,
-   flight/accommodation creation via the real API, reading a saved
-   input file to skip the prompts) rather than a small fix, which is why it
-   wasn't bundled into this session's CI-workflow change.
+**No admin CLI script for adding a test user.** `docs/Spec.md`'s "Test
+cases" section asks for "a script for testing that takes from .env the
+admin credentials and asks questions to add a user ... name, email
+(optional), phone (optional), instagram handle (optional), arrival flight
+information, departing flight information, accommodation (either select an
+existing or adding one) ... create a file specifying the input (for re-use)
+and create the entry in the deployed system corresponding via http
+requests." Nothing like this exists yet — it's a larger, standalone piece
+of tooling (interactive prompts, admin login, invite creation,
+flight/accommodation creation via the real API, reading a saved input file
+to skip the prompts) rather than a small fix, which is why it's been passed
+over twice now in favor of smaller, more clearly-scoped gaps.
 
 The still-open placeholder WhatsApp group link (blocked on the real link
 existing, not on implementation work) also remains outstanding.
@@ -691,4 +709,5 @@ existing, not on implementation work) also remains outstanding.
 A fresh read-through of the spec section by section against `src/` is still
 the right first step next time, rather than trusting this file's own status
 list as exhaustive (that's how the Kalender nav item, Activities, the
-Vehicles gap, and this session's two findings were each found).
+Vehicles gap, the CI workflow, and this session's Flights overlay were each
+found).

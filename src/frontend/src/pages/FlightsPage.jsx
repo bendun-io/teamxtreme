@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
+import Modal from '../components/Modal.jsx';
+import ContactLinks from '../components/ContactLinks.jsx';
 import '../components/ResourceList.css';
 
 const emptyForm = {
@@ -31,10 +33,12 @@ function toFormValue(isoString) {
 function FlightsPage() {
   const { user } = useAuth();
   const [flights, setFlights] = useState([]);
+  const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   async function loadFlights() {
     const res = await fetch('/api/flights', { credentials: 'include' });
@@ -44,9 +48,20 @@ function FlightsPage() {
     }
   }
 
+  async function loadUsers() {
+    const res = await fetch('/api/users', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      setUsers(data.users);
+    }
+  }
+
   useEffect(() => {
     loadFlights();
+    loadUsers();
   }, []);
+
+  const usersById = Object.fromEntries(users.map((u) => [u.id, u]));
 
   function startEdit(flight) {
     setEditingId(flight.id);
@@ -197,7 +212,13 @@ function FlightsPage() {
                 </div>
                 {flight.notes && <p className="resource-notes">{flight.notes}</p>}
                 <div className="resource-item-footer">
-                  <span className="resource-owner">{flight.userName}</span>
+                  <button
+                    type="button"
+                    className="resource-owner-button"
+                    onClick={() => setSelectedUserId(flight.userId)}
+                  >
+                    {flight.userName}
+                  </button>
                   {flight.userId === user?.id && (
                     <span className="resource-item-actions">
                       <button type="button" onClick={() => startEdit(flight)}>
@@ -214,6 +235,12 @@ function FlightsPage() {
           </ul>
         </section>
       </main>
+
+      {selectedUserId && (
+        <Modal title={usersById[selectedUserId]?.name || 'Kontakt'} onClose={() => setSelectedUserId(null)}>
+          <ContactLinks user={usersById[selectedUserId]} />
+        </Modal>
+      )}
     </div>
   );
 }
