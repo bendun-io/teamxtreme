@@ -2,8 +2,8 @@ import path from 'node:path';
 import archiver from 'archiver';
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { uploadMiddleware, isAcceptedMediaFile, isImageFile } from '../utils/scanUpload.js';
-import { generateImageThumbnail } from '../utils/thumbnail.js';
+import { uploadMiddleware, isAcceptedMediaFile, isImageFile, isVideoFile } from '../utils/scanUpload.js';
+import { generateImageThumbnail, generateVideoThumbnail } from '../utils/thumbnail.js';
 import { uploadsDir } from '../utils/uploads.js';
 import { listMedia, createMedia, countMedia } from '../db/media.js';
 
@@ -27,9 +27,10 @@ function publicMedia(m) {
     uploadedBy: m.uploaded_by,
     uploadedByName: m.uploaded_by_name,
     url: `/uploads/${m.file_name}`,
-    // Only images get a generated thumbnail (see utils/thumbnail.js); the
-    // frontend shows a fixed placeholder for videos and for an image whose
-    // thumbnail generation failed (e.g. an unsupported HEIC variant).
+    // Both images and videos get a generated thumbnail (see
+    // utils/thumbnail.js); the frontend falls back to a fixed video-icon
+    // placeholder when generation failed (e.g. ffmpeg unavailable, an
+    // unsupported codec, an unsupported HEIC image variant).
     thumbnailUrl: m.thumbnail_name ? `/uploads/thumbnails/${m.thumbnail_name}` : null,
     originalName: m.original_name,
     mimeType: m.mime_type,
@@ -90,15 +91,17 @@ router.post('/', uploadMedia, asyncHandler(async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'file is required' });
 
   let thumbnailName = null;
-  if (isImageFile(req.file)) {
-    try {
+  try {
+    if (isImageFile(req.file)) {
       thumbnailName = await generateImageThumbnail(req.file.path);
-    } catch (err) {
-      console.warn(
-        `thumbnail generation failed for media upload (user ${req.user.id}, file "${req.file.originalname}"):`,
-        err
-      );
+    } else if (isVideoFile(req.file)) {
+      thumbnailName = await generateVideoThumbnail(req.file.path);
     }
+  } catch (err) {
+    console.warn(
+      `thumbnail generation failed for media upload (user ${req.user.id}, file "${req.file.originalname}"):`,
+      err
+    );
   }
 
   const media = await createMedia(req.user.id, {

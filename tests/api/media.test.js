@@ -198,7 +198,12 @@ test('POST /api/media generates a thumbnail for an image and serves it back', as
   assert.equal(thumbRes.status, 200);
 });
 
-test('POST /api/media does not generate a thumbnail for a video', async () => {
+test('POST /api/media still succeeds, with no thumbnail, when the uploaded "video" has no real frames ffmpeg can extract', async () => {
+  // generateVideoThumbnail() (utils/thumbnail.js) shells out to ffmpeg —
+  // this fixture isn't a real video at all, so the extraction fails and the
+  // upload must still succeed with thumbnailUrl left null, same
+  // best-effort contract as a corrupt image (see the icon-192.png test for
+  // the case where extraction *does* succeed).
   const { client } = await loginAsNewUser(baseUrl, {
     email: 'media10@test.local',
     password: 'pw123456',
@@ -210,6 +215,36 @@ test('POST /api/media does not generate a thumbnail for a video', async () => {
   const res = await client.post('/api/media', undefined, { formData: form });
   assert.equal(res.status, 201);
   assert.equal(res.body.media.thumbnailUrl, null);
+});
+
+test('POST /api/media generates a real extracted-frame thumbnail for a video, with a play-button overlay', async () => {
+  const { client } = await loginAsNewUser(baseUrl, {
+    email: 'media14@test.local',
+    password: 'pw123456',
+    name: 'Video Uploader',
+  });
+
+  // A tiny synthetic clip (`ffmpeg -f lavfi -i testsrc=...`) — real enough
+  // for ffmpeg to extract an actual frame from, unlike the garbage-bytes
+  // fixture above.
+  const videoPath = path.join(__dirname, '../fixtures/sample.mp4');
+  const videoBytes = await readFile(videoPath);
+
+  const form = new FormData();
+  form.set('file', new Blob([videoBytes], { type: 'video/mp4' }), 'sample.mp4');
+  const res = await client.post('/api/media', undefined, { formData: form });
+  assert.equal(res.status, 201);
+  assert.ok(res.body.media.thumbnailUrl, 'expected a generated thumbnailUrl');
+  assert.ok(res.body.media.thumbnailUrl.startsWith('/uploads/thumbnails/'));
+
+  const thumbRes = await fetch(`${baseUrl}${res.body.media.thumbnailUrl}`, {
+    headers: { cookie: client.cookie },
+  });
+  assert.equal(thumbRes.status, 200);
+  const thumbBytes = Buffer.from(await thumbRes.arrayBuffer());
+  // JPEG magic bytes — confirms this is a real re-encoded image, not an
+  // empty/placeholder file.
+  assert.equal(thumbBytes.subarray(0, 2).toString('hex'), 'ffd8');
 });
 
 test('GET /api/media/count reflects the number of shared files', async () => {

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Modal from '../components/Modal.jsx';
 import '../auth/auth.css';
+import './AdminPage.css';
 import './AdminInvitesPage.css';
 
 function AdminInvitesPage() {
@@ -9,6 +11,9 @@ function AdminInvitesPage() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   async function loadInvites() {
     const res = await fetch('/api/auth/invites', { credentials: 'include' });
@@ -60,6 +65,26 @@ function AdminInvitesPage() {
     return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
+  async function handleDeleteUser() {
+    if (!userToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/users/${userToDelete.usedBy}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        setDeleteError('Nutzer konnte nicht gelöscht werden.');
+        return;
+      }
+      setUserToDelete(null);
+      await loadInvites();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="page">
       <main className="card-list">
@@ -92,9 +117,21 @@ function AdminInvitesPage() {
                 <div className="invite-row">
                   <span>{invite.inviteeName}</span>
                   {invite.usedAt ? (
-                    <span className="invite-status invite-status--used">
-                      angenommen von {invite.usedByName}
-                    </span>
+                    <div className="invite-actions">
+                      <span className="invite-status invite-status--used">
+                        angenommen von {invite.usedByName}
+                      </span>
+                      <button
+                        type="button"
+                        className="invite-delete-button"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setUserToDelete(invite);
+                        }}
+                      >
+                        Nutzer löschen
+                      </button>
+                    </div>
                   ) : (
                     <div className="invite-actions">
                       <button type="button" onClick={() => copyLink(invite)}>
@@ -109,6 +146,25 @@ function AdminInvitesPage() {
           </ul>
         </section>
       </main>
+
+      {userToDelete && (
+        <Modal title="Nutzer wirklich löschen?" onClose={() => setUserToDelete(null)}>
+          <p>
+            Das Konto von <strong>{userToDelete.usedByName}</strong> wird unwiderruflich gelöscht,
+            zusammen mit allen von ihm/ihr geteilten Fotos/Videos, Flügen, Unterkünften und
+            Fahrzeugen.
+          </p>
+          {deleteError && <p className="auth-error">{deleteError}</p>}
+          <button
+            type="button"
+            className="admin-danger-button"
+            disabled={deleting}
+            onClick={handleDeleteUser}
+          >
+            Endgültig löschen
+          </button>
+        </Modal>
+      )}
     </div>
   );
 }
