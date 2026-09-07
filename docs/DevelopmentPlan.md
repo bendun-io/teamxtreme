@@ -806,9 +806,15 @@ it's the source of truth for "what's next," not a fixed roadmap.
   Verified locally: installed `ffmpeg` via `winget` (`Gyan.FFmpeg`, not
   preinstalled on this machine), generated a real short test clip with
   `ffmpeg -f lavfi -i testsrc=...`, and confirmed a thumbnail with a visible
-  play button gets generated end to end through `POST /api/media`. GitHub's
-  `ubuntu-latest` CI runners ship `ffmpeg` preinstalled, so
-  `.github/workflows/tests.yml` needs no changes. See
+  play button gets generated end to end through `POST /api/media`.
+
+  **Bugfix, found by CI rather than locally**: the first version of this PR
+  assumed GitHub's `ubuntu-latest` runners ship `ffmpeg` preinstalled (they
+  don't — `docker`/`docker compose` are, `ffmpeg` isn't, an easy mix-up but
+  wrong) and shipped with no workflow change. The new video-thumbnail test
+  failed in CI with `spawn ffmpeg ENOENT` even though it passed locally.
+  Fixed by adding an explicit `apt-get install -y ffmpeg` step to
+  `.github/workflows/tests.yml` before `npm test` runs. See
   [API.md](API.md#get-apimedia) and
   [Architecture.md](Architecture.md#media-thumbnails) for the full design.
 
