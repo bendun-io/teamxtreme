@@ -71,3 +71,18 @@
 .invite-status--used {
   color: var(--color-success-text);
 }
+
+/* ".invite-row button" above (specificity 0,1,1) would otherwise beat a
+   plain ".invite-delete-button" (0,1,0) regardless of source order — the
+   same trap noted in DevelopmentPlan.md for ".card a" vs
+   ".helpful-link-button" — so this stays scoped under .invite-row too. */
+.invite-row .invite-delete-button {
+  padding: 0.4rem 0.7rem;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  font-size: 0.85rem;
+}
+
+.invite-row .invite-delete-button:hover {
+  background: #f5d3d3;
+}

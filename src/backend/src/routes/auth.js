@@ -80,7 +80,7 @@ router.post('/invites', requireAuth, requireAdmin, asyncHandler(async (req, res)
 router.get('/invites', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`
     SELECT i.id, i.invitee_name, i.token, i.created_at, i.used_at,
-           u.name AS used_by_name
+           i.used_by, u.name AS used_by_name
     FROM invites i
     LEFT JOIN users u ON u.id = i.used_by
     ORDER BY i.created_at DESC
@@ -92,6 +92,7 @@ router.get('/invites', requireAuth, requireAdmin, asyncHandler(async (req, res) 
       url: appUrl(`/invite/${i.token}`),
       createdAt: i.created_at,
       usedAt: i.used_at,
+      usedBy: i.used_by,
       usedByName: i.used_by_name,
     })),
   });

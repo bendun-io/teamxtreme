@@ -13,10 +13,13 @@ function formatSize(bytes) {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-// Videos show a fixed placeholder in the grid rather than a generated
-// thumbnail (see docs/Spec.md: "just a thumbnail with an indication that it
-// is a video") — no per-video processing, and no video bytes are fetched
-// just to render the grid.
+// A generated video thumbnail (a real extracted frame, see
+// utils/thumbnail.js's generateVideoThumbnail()) already has a play-button
+// overlay baked in server-side, so the "Video" text badge here is enough to
+// name it without a redundant icon on top. When no thumbnail exists (ffmpeg
+// unavailable, an unsupported codec, ...) this icon is what indicates the
+// item is a video instead — no video bytes are fetched just to render the
+// grid either way.
 function VideoIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -30,7 +33,11 @@ function MediaThumb({ item }) {
   if (item.mimeType.startsWith('video/')) {
     return (
       <div className="media-thumb media-thumb-video">
-        <VideoIcon />
+        {item.thumbnailUrl ? (
+          <img src={item.thumbnailUrl} alt={item.originalName} className="media-thumb" loading="lazy" />
+        ) : (
+          <VideoIcon />
+        )}
         <span className="media-thumb-badge">Video</span>
       </div>
     );

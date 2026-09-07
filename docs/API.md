@@ -105,6 +105,18 @@ someone else" pickers and to build the Calendar page's contact overlay.
 ordered by name — `email`, `phone` and `instagramHandle` are `null` when a
 user hasn't filled them in (see [Profile](#profile)).
 
+#### `DELETE /api/users/:id` — admin only
+Deletes a user's account and everything that belongs to them (flights,
+accommodations/vehicles/activities they created, media they uploaded, their
+own used invite, their profile picture file) — see
+[Architecture.md](Architecture.md#user-deletion).
+**204**, no body.
+**400** if `:id` is the caller's own account (an admin can't delete
+themselves through this route). **403** if the caller isn't an admin.
+**404** if no user with that id exists. **409** if the user still has
+associated data the delete can't safely cascade past (an admin who has
+created invites for other people).
+
 ### Accommodations
 All routes require auth. Anyone can create an accommodation and assign
 anyone (self or another user) to it; only the assigned user can accept a
@@ -229,10 +241,12 @@ Gallery of everyone's shared photos/videos, ordered newest first.
 **200** `{ "media": [{ id, uploadedBy, uploadedByName, url, thumbnailUrl, originalName, mimeType, fileSize, createdAt }] }`
 — `url` is the original file's `/uploads/<filename>` path (unchanged, full
 quality). `thumbnailUrl` is a generated `/uploads/thumbnails/<filename>` JPEG
-for images, used by the gallery grid instead of the original — see
-[Architecture.md](Architecture.md#media-thumbnails). `null` for videos (the
-frontend shows a fixed placeholder instead) and for an image whose thumbnail
-generation failed.
+used by the gallery grid instead of the original — for an image this is a
+resized copy, for a video an extracted frame with a play-button overlay
+baked in — see [Architecture.md](Architecture.md#media-thumbnails). `null`
+when generation failed (an unsupported codec/format, or `ffmpeg` unavailable
+for a video); the frontend falls back to the full-resolution original for an
+image, or a fixed video-icon placeholder for a video.
 
 #### `POST /api/media`
 Body: `multipart/form-data` with a `file` field (image or video, original

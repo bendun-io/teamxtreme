@@ -95,3 +95,8 @@ export async function updateUser(id, fields) {
   );
   return rows[0] || null;
 }
+
+export async function deleteUser(id) {
+  const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+  return rowCount > 0;
+}
