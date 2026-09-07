@@ -29,6 +29,14 @@ very first one gets in). Once at least one user exists these vars are no
 longer read; log in as that admin and use **Einladungen** in the app to
 invite everyone else, then optionally remove `ADMIN_PASSWORD` from `.env`.
 
+### WhatsApp group link
+Not an `.env` var — an in-app admin setting. The homepage's "Hilfreiche
+Links" WhatsApp button starts out pointing at a placeholder
+(`https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE_LINK`) until an admin
+opens **Admin → Allgemeine Einstellungen** and saves the real group invite
+link — no deploy or code change needed, and it can be changed again later
+the same way (e.g. for a new season's group).
+
 ### Cloudflare Tunnel
 The app is exposed publicly via a Cloudflare Tunnel rather than open inbound
 ports.
