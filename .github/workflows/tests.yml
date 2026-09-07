@@ -5,6 +5,8 @@ name: Tests
 # Postgres/ClamAV containers) on every pull request.
 on:
   pull_request:
+    paths-ignore:
+      - '.claude/**'
 
 jobs:
   backend-tests:
