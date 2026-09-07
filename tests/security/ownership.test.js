@@ -86,7 +86,12 @@ test("a user cannot accept a vehicle assignment that isn't theirs", async () => 
   const { user: targetUser } = await seedUser('own5@test.local');
   const { client: intruder } = await seedUser('intr3@test.local');
 
-  const createRes = await creator.post('/api/vehicles', { seats: 4 });
+  const createRes = await creator.post('/api/vehicles', {
+    startingPoint: 'Karlsruhe',
+    endingPoint: 'Málaga',
+    departureTime: '2026-06-01T09:00:00Z',
+    seats: 4,
+  });
   const vehicleId = createRes.body.vehicle.id;
 
   const assignRes = await creator.post(`/api/vehicles/${vehicleId}/assign`, { userId: targetUser.id });

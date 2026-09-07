@@ -115,6 +115,51 @@
   color: var(--color-text-muted);
 }
 
+.assignable-owner-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.assignable-owner-button:hover {
+  text-decoration-color: currentColor;
+}
+
+.assignable-time {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.assignable-toggle-past {
+  display: block;
+  width: 100%;
+  margin-top: 0.9rem;
+  border: none;
+  background: none;
+  padding: 0.4rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.assignable-toggle-past:hover {
+  color: var(--color-text);
+}
+
+.assignable-list--past {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--color-border);
+}
+
 .assignment-list {
   list-style: none;
   margin: 0.5rem 0 0;

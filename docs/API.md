@@ -142,16 +142,24 @@ Accepts a pending assignment. Only the assigned user may accept it.
 **403** not your assignment. **404** assignment not found.
 
 ### Vehicles
-Same shape as Accommodations, with `seats` (capacity) and `details` instead
-of location/dates.
+
+A "ride" (still the `vehicles` route/table name): a starting point, an
+ending point, a departure time, seats (capacity) and freeform details. Same
+assignment shape as Accommodations otherwise (anyone can create one and
+assign anyone; only the assigned user can accept a pending assignment).
 
 #### `GET /api/vehicles`
-**200** `{ "vehicles": [{ id, createdBy, createdByName, seats, details, createdAt, assignments: [...] }] }`, ordered by `createdAt` ascending.
+**200** `{ "vehicles": [{ id, createdBy, createdByName, startingPoint, endingPoint, departureTime, seats, details, createdAt, assignments: [...] }] }`,
+ordered by `departureTime` ascending (a `null` `departureTime` — a ride
+created before this field existed — sorts last). The frontend splits this
+into "upcoming" (shown by default) and "past" (behind a toggle) — see
+[Architecture.md](Architecture.md#vehicles--ride-sharing).
 
 #### `POST /api/vehicles`
-Body: `{ seats, details? }`.
+Body: `{ startingPoint, endingPoint, departureTime, seats, details? }`.
 **201** `{ "vehicle": {...} }`
-**400** if `seats` is missing or not a positive number.
+**400** if `startingPoint`, `endingPoint` or `departureTime` is missing, or
+`seats` is missing or not a positive number.
 
 #### `POST /api/vehicles/:id/assign`
 Body: `{ userId? }` — mirrors accommodations' assign endpoint.
