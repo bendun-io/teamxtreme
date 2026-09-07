@@ -12,6 +12,15 @@
 //   npm run add-user -- --input file.json  # non-interactive, reads file.json
 //   npm run add-user -- --save file.json   # interactive, but save under this path
 //
+//   node --env-file=../.env scripts/add-user.js --input file.json
+//
+// PowerShell note: PowerShell's npm.ps1 shim drops a bare `--` before it
+// reaches npm, so `npm run add-user -- --input file.json` silently falls
+// back to interactive mode there (npm logs "Unknown cli config" and eats
+// the flag). Quote the separator instead: npm run add-user '--' --input
+// file.json — or call node directly: node --env-file=../.env
+// scripts/add-user.js --input file.json (run from tests/).
+//
 // Requires ADMIN_EMAIL, ADMIN_PASSWORD (and optionally APP_BASE_URL,
 // defaulting to http://localhost:8000) in the environment — the npm script
 // loads these from the repository's root .env via --env-file.

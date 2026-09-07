@@ -75,6 +75,13 @@ npm run add-user -- --input file.json  # non-interactive, reads file.json
 npm run add-user -- --save file.json   # interactive, but save under this path
 ```
 
+**PowerShell**: the `npm.ps1` shim drops a bare `--` before it reaches npm,
+so the commands above silently fall back to interactive mode (npm logs
+`Unknown cli config "--input"` and swallows the flag instead of forwarding
+it). Quote the separator — `npm run add-user '--' --input file.json` — or
+call node directly: `node --env-file=../.env scripts/add-user.js --input
+file.json` (from `tests/`).
+
 Requires `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `APP_BASE_URL` — the npm script
 loads them from the repository root's `.env` via `node --env-file=../.env`,
 the same file `docker compose` itself uses, so pointing this at the

@@ -51,6 +51,7 @@ The app should be used for the team to organize travel together in a better way 
 - Regarding the invitation. In addition to the copy link, the admin also gets a button "Send E-Mail" that uses a mailto: link to start a mail program with the invitation link.
 - The user should be able to manage his/her own profile by setting a name and a profile picture. If social login is used, it should also use the profile picture from there as starting profile picture.
 - Users should be able to add in their profile an email address, a phone number and an instragram handle in order to be contacted by other users.
+- Admins should through their panel also have the possibilities to delete single users. This should be done from the invitation management.
 
 ### Admin Menu
 
