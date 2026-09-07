@@ -265,7 +265,10 @@ it's the source of truth for "what's next," not a fixed roadmap.
   pattern). The WhatsApp href is a placeholder
   (`https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE_LINK`) — the real
   group invite link wasn't available at build time; swap it in
-  `HomePage.jsx` once it exists. No backend changes.
+  `HomePage.jsx` once it exists. No backend changes. (Superseded by the
+  Admin Menu rework below: the link moved out of `HomePage.jsx` into the
+  admin-editable `settings` table, so no code change is needed to set the
+  real one — see that entry and [Architecture.md](Architecture.md#admin-menu).)
 
 - **Homepage open-tasks card** — the spec's "Starting Page" and "User tasks"
   sections called for a card, second in the list right after the header
@@ -735,9 +738,19 @@ it's the source of truth for "what's next," not a fixed roadmap.
 ## Next unfinished item
 
 No implementation gap remains open from the three found two sessions ago —
-this was the last of them. The still-open placeholder WhatsApp group link
-(blocked on the real link existing, not on implementation work) remains
-outstanding.
+this was the last of them.
+
+The WhatsApp group link previously tracked here as "still outstanding" is
+**not actually a gap**: `AdminSettingsPage.jsx`/`PATCH /api/admin/settings`
+already let any admin set the real link at any time, no deploy or code
+change required (`db/settings.js`'s `whatsapp_link` default —
+`https://chat.whatsapp.com/REPLACE_WITH_GROUP_INVITE_LINK` — only shows up
+if nobody has visited `/admin/settings` and saved a real one yet). This was
+previously mis-tracked as a development to-do because the real link wasn't
+available *when the feature was first built*, which is a one-time content
+step for whoever runs the deployment, not something a future "continue
+development" session can act on — corrected after the user pointed this
+out. Nothing here needs picking up.
 
 A fresh read-through of the spec section by section against `src/` is still
 the right first step next time, rather than trusting this file's own status
