@@ -25,6 +25,7 @@ const fakeId = '00000000-0000-0000-0000-000000000000';
 const protectedRoutes = [
   ['GET', '/api/auth/me'],
   ['GET', '/api/users'],
+  ['DELETE', `/api/users/${fakeId}`],
   ['GET', '/api/profile'],
   ['PATCH', '/api/profile'],
   ['GET', '/api/flights'],

@@ -88,7 +88,8 @@ The admin menu should contain cards with different features / subnavigations. Th
 - It should start with a header picture.
 - Second there should be a list of open user tasks, if no open user task is there, this card should not be shown.
 - Then there should be the list of training times and the location where is trained. 
-- Then traveling information (nearest Airport is Malaga). 
+- Then traveling information (nearest Airport is Malaga). This card should also include a list of people that are on the same flight to the training camp and a list of people that are on the same flight back (the flight should be not too specific here, same time (+/- 3 hours) and same airport should be considered same flight).
+- The photos and videos card should show the two most recent thumbnails between the title and the link to the sharing.
 - Then there should be a card with helpful links (put there as buttons).
   - One link to a WhatsApp Group.
   - One link to https://www.leogalatijiujitsu.com/ "Website of the Leo Galati Team".

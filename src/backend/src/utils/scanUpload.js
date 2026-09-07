@@ -37,12 +37,21 @@ export function isAcceptedMediaFile(file, { image = true, video = true } = {}) {
 
 // Same declared-type-then-extension logic as isAcceptedMediaFile(), but
 // answering "is this specifically an image" (as opposed to a video) — used
-// by routes/media.js to decide whether a thumbnail should be generated.
+// by routes/media.js to decide which kind of thumbnail should be generated.
 export function isImageFile(file) {
   const type = file.mimetype || '';
   if (type.startsWith('image/') && !DANGEROUS_IMAGE_TYPES.has(type)) return true;
   const ext = path.extname(file.originalname || '').toLowerCase();
   return IMAGE_EXTENSIONS.has(ext);
+}
+
+// The video counterpart to isImageFile() — used by routes/media.js to decide
+// whether to run generateVideoThumbnail() on an upload.
+export function isVideoFile(file) {
+  const type = file.mimetype || '';
+  if (type.startsWith('video/')) return true;
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  return VIDEO_EXTENSIONS.has(ext);
 }
 
 // quarantineDir and uploadsDir aren't guaranteed to be on the same

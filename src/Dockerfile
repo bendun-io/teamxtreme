@@ -9,6 +9,9 @@ RUN npm run build
 # ---- Backend ----
 FROM node:20-alpine AS backend
 WORKDIR /app
+# ffmpeg: extracts a frame from uploaded videos for their gallery thumbnail
+# (see utils/thumbnail.js's generateVideoThumbnail() / Architecture.md#media-thumbnails)
+RUN apk add --no-cache ffmpeg
 COPY backend/package*.json ./
 RUN npm ci --omit=dev
 COPY backend/ ./

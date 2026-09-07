@@ -5,6 +5,8 @@ name: Tests
 # Postgres/ClamAV containers) on every pull request.
 on:
   pull_request:
+    paths-ignore:
+      - '.claude/**'
 
 jobs:
   backend-tests:
@@ -21,6 +23,12 @@ jobs:
           cache-dependency-path: |
             src/backend/package-lock.json
             tests/package-lock.json
+
+      # utils/thumbnail.js's generateVideoThumbnail() shells out to a system
+      # `ffmpeg` binary (see Architecture.md#media-thumbnails) — not
+      # preinstalled on ubuntu-latest runners, unlike originally assumed.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       # tests/ imports src/backend/src/app.js and its db/* modules directly,
       # so it needs the backend's own dependencies (express, pg, ...)

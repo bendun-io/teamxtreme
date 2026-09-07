@@ -56,6 +56,10 @@ src/
       009_add_vehicle_ride_fields.sql                       # vehicles.starting_point/ending_point/
                                                               # departure_time (nullable — pre-migration
                                                               # rows simply have none of these)
+      010_allow_user_deletion.sql                             # relaxes invites.used_by /
+                                                                # *_assignments.assigned_by FK behavior so
+                                                                # deleting a user doesn't hit an FK
+                                                                # violation — see "User deletion" below
     src/
       app.js                # builds and exports the Express app (routes, static hosting, SPA
                              # fallback) without calling .listen() — imported directly by index.js
@@ -86,8 +90,9 @@ src/
         scanUpload.js          # shared multer-based upload middleware: writes to the quarantine
                                 # dir, scans with malwareScan.js, only then moves the file into
                                 # uploadsDir — used by both profile.js and media.js
-        thumbnail.js            # generateImageThumbnail() — resizes an uploaded image via sharp;
-                                # used only by routes/media.js (see Architecture.md#media-thumbnails)
+        thumbnail.js            # generateImageThumbnail() (sharp) and generateVideoThumbnail()
+                                # (shells out to ffmpeg, then sharp) — used only by routes/media.js
+                                # (see Architecture.md#media-thumbnails)
       middleware/
         auth.js              # requireAuth (reads tx_session cookie), requireAdmin
       oauth/
@@ -96,7 +101,8 @@ src/
         health.js           # GET /api/health
         auth.js              # login/logout/me, invites, register, google/instagram OAuth
         users.js             # GET /api/users — directory (id, name, contact info) for assign
-                               # pickers and the Calendar contact overlay
+                               # pickers and the Calendar contact overlay; DELETE /api/users/:id
+                               # (admin only) — see "User deletion" below
         profile.js            # GET/PATCH /api/profile — name, email, phone, Instagram handle,
                                 # and profile picture upload (scanUpload.js)
         flights.js           # flights CRUD, mounted behind requireAuth
@@ -149,7 +155,8 @@ src/
                                 # Settings, plus the inline "clear data" danger button — see
                                 # "Admin Menu" below
         AdminInvitesPage.jsx  # admin-only: create invites, copy shareable links,
-                                # or send them via a mailto: link
+                                # or send them via a mailto: link; delete the account
+                                # behind a used invite (see "User deletion" below)
         AdminSettingsPage.jsx  # admin-only: edit general settings (currently just the
                                  # WhatsApp link)
         HomePage.jsx          # hardcoded homepage cards (training, travel info, packing list);
@@ -285,6 +292,74 @@ existing invites coverage, and `tests/api/admin.test.js` exercises
 `clear-data` end-to-end (seeds a full trip's worth of data, asserts a wrong
 `confirm` deletes nothing, then asserts a correct one wipes everything
 except the admin — who can still `GET /api/auth/me` afterwards).
+
+## User deletion
+
+Per docs/Spec.md's "User Management" section ("Admins should through their
+panel also have the possibilities to delete single users. This should be
+done from the invitation management"), `DELETE /api/users/:id`
+(`routes/users.js`, admin-only, self-delete blocked with a `400` so an admin
+can't lock themselves out mid-session) deletes a user's account.
+
+Most of what belongs to that user disappears automatically via the
+`users(id)` foreign keys' `ON DELETE CASCADE` that already existed for
+`flights`/`accommodations`/`vehicles`/`activities`/`media` (whoever created
+or uploaded something owns its lifecycle, same as
+[Clear data](#clear-data)'s per-table cleanup). Two FK columns needed a new
+migration (`010_allow_user_deletion.sql`) because they'd otherwise block the
+delete outright with a foreign-key violation:
+
+- `invites.used_by` — every registered user is `used_by` on the invite that
+  created their account (`NOT NULL` created_by is a separate concern, see
+  below), and that column previously had no `ON DELETE` behavior at all
+  (`NO ACTION`, same as `RESTRICT`). Changed to `ON DELETE CASCADE`: once the
+  account is gone, the invite row that led to it no longer represents
+  anything the admin panel needs to show, so it's deleted along with the
+  user rather than left dangling with a `usedByName` pointing nowhere.
+- `accommodation_assignments.assigned_by` / `vehicle_assignments.assigned_by`
+  — unlike `created_by`, **any** authenticated user can be `assigned_by` on
+  someone else's assignment (`POST .../:id/assign` isn't admin-gated; see
+  [API.md](API.md#accommodations)), so deleting a perfectly ordinary member
+  who once assigned a friend to an accommodation would otherwise fail the
+  same way. Changed to nullable + `ON DELETE SET NULL`: the assignment
+  itself (the *other* user's spot) survives, only the "who assigned this"
+  attribution is lost — `routes/accommodations.js`/`routes/vehicles.js`
+  already `LEFT JOIN` on this column for `assignedByName`, so a `NULL` here
+  was already handled, just previously unreachable.
+
+`invites.created_by` (`NOT NULL`, still `RESTRICT`/`NO ACTION`) is
+deliberately left alone: only admins create invites, and cascading those
+away on delete could silently invalidate a still-unused invite link someone
+else is holding, or erase invite history for members who already registered
+through it — a much larger blast radius than the two columns above, for a
+case (deleting an admin who has invited people) the spec doesn't actually
+call for. If that FK blocks a delete, `routes/users.js` catches Postgres'
+`23503` (foreign key violation) and returns `409` with a clear message
+instead of a raw `500`.
+
+Before the delete, `routes/users.js` also reads the target's uploaded
+`media` rows and (if locally uploaded, i.e. starts with `/uploads/`) profile
+picture path, then unlinks those files from disk after the DB transaction
+commits — best-effort, same reasoning as
+[Clear data](#clear-data)'s file cleanup (a leftover file at that point is
+untidy, not a functional or security issue).
+
+Frontend: `AdminInvitesPage.jsx`'s invite list — per the spec's "done from
+the invitation management" — gained a "Nutzer löschen" button next to any
+invite that's been used (i.e. has a real account behind it; `GET
+/api/auth/invites` now also returns `usedBy`, the user id, alongside the
+existing `usedByName`), behind a confirmation `Modal` (reusing
+`AdminPage.css`'s `.admin-danger-button` rather than a new style) — lighter
+than Clear Data's type-to-confirm phrase, since deleting one member is a
+smaller blast radius than wiping the whole season's data.
+
+Per the spec's "For all admin features, ensure that there is a test that
+only admins can use them" requirement, `tests/security/admin-only.test.js`
+covers a non-admin getting `403` and an admin succeeding;
+`tests/api/users.test.js` covers the cascade/`SET NULL` behavior end to end
+(deleting a user who assigned a *different* user to an accommodation they
+created leaves that other user's assignment intact), the `404`/`400`
+(self-delete) cases, and that the deleted user's own invite disappears too.
 
 ## Login brute-force protection
 
@@ -471,16 +546,43 @@ uploaded file clears the malware scan and lands in `uploadsDir`:
   can't decode) the upload still succeeds — `thumbnail_name` just stays
   `NULL` (added in migration `005_add_media_thumbnail.sql`) and the frontend
   falls back to the full-resolution original for that item's grid tile.
-- **Videos**: no server-side processing at all — extracting a real video
-  frame would mean adding `ffmpeg` to the image and pipeline for a feature
-  the spec only asks be "just a thumbnail with an indication that it is a
-  video." `MediaPage.jsx` renders a fixed placeholder (a video icon + a
-  "Video" badge) for any item whose `mimeType` starts with `video/`,
-  fetching zero video bytes for the grid.
-- `isImageFile()` (`utils/scanUpload.js`, alongside the existing
-  `isAcceptedMediaFile()`) reuses the same declared-MIME-type-then-extension
-  fallback to decide whether an upload is an image worth thumbnailing —
-  profile pictures don't go through this path; only `routes/media.js` does.
+- **Videos**: `utils/thumbnail.js`'s `generateVideoThumbnail()` extracts a
+  frame 0.5s into the clip via `ffmpeg` (`-ss 00:00:00.5 -i <file> -frames:v
+  1`, seeking before decoding rather than decoding from frame 0 — both for
+  speed and because a camera app's very first frame is occasionally a black
+  fade-in), then resizes it through `sharp` exactly like
+  `generateImageThumbnail()` (max 480×480, preserving aspect ratio, JPEG
+  quality 75). A filled circle + right-pointing triangle ("play button") is
+  composited on top via `sharp`'s SVG compositing, sized relative to the
+  resized frame's smaller dimension (so it scales sensibly for both a
+  square and a very wide/tall video) — this directly answers the spec's
+  "overlay it with something like a video symbol that the user also knows it
+  is a video," on top of the frame itself answering "create a thumbnail for
+  the specific video that indicates the content." `ffmpeg` is a system
+  binary, not an npm package — `src/Dockerfile` installs it via
+  `apk add ffmpeg` in the backend stage; for [local dev](#local-development)
+  without Docker, it must be separately installed and on `PATH`, same
+  category of external dependency as `clamav` (see
+  [Malware scanning](#malware-scanning)). `ubuntu-latest` GitHub Actions
+  runners do **not** ship it preinstalled either — found out by a first
+  version of this feature's own new test breaking CI with `spawn ffmpeg
+  ENOENT` — so `.github/workflows/tests.yml` installs it via `apt-get`
+  before `npm test` runs (see [Testing](#testing)).
+- Same failure-tolerance as images: if `ffmpeg` is missing, the seek lands
+  past a very short clip's duration, the codec is one `ffmpeg`'s build
+  doesn't support, or the extracted frame is otherwise corrupt,
+  `generateVideoThumbnail()` throws and `routes/media.js` catches it the same
+  way it already catches a failed `generateImageThumbnail()` — the upload
+  still succeeds with `thumbnail_name` left `NULL`. `MediaPage.jsx` falls
+  back to a fixed video-icon placeholder for any such item; when a real
+  thumbnail exists it's shown as an `<img>` (the play-button overlay is
+  already baked into the JPEG) with the same "Video" text badge layered on
+  top, so the grid still fetches zero raw video bytes to render either way.
+- `isImageFile()`/`isVideoFile()` (`utils/scanUpload.js`, alongside the
+  existing `isAcceptedMediaFile()`) reuse the same declared-MIME-type-then-
+  extension fallback to decide which kind of thumbnail (if any) an upload
+  gets — profile pictures don't go through this path; only `routes/media.js`
+  does.
 
 `GET /api/media/download-all` (see [API.md](API.md#get-apimediadownload-all))
 answers the spec's "download all" button by streaming a zip of every
@@ -730,7 +832,10 @@ above, plus it has nothing to serve under `/` until the frontend has been
 built into `src/backend/public` (a manual step, or via the Docker build) —
 the `/api/*` routes work regardless. Uploads (profile picture, media) will
 fail closed if `clamav` isn't reachable — see
-[Malware scanning](#malware-scanning).
+[Malware scanning](#malware-scanning). `ffmpeg` is not required to run the
+server at all, only for video thumbnails to be generated — see
+[Media thumbnails](#media-thumbnails); a missing `ffmpeg` just means video
+uploads keep the fixed placeholder instead of a real thumbnail.
 
 ## Testing
 
@@ -759,7 +864,9 @@ runs `npm test` — its `pretest` script already handles bringing up
 `tests/docker-compose.yml`'s containers and waiting for them to be healthy,
 so the workflow itself only adds a teardown step afterwards. GitHub Actions'
 `ubuntu-latest` runners ship Docker and the `docker compose` plugin
-preinstalled, so no extra setup step is needed for that.
+preinstalled, so no extra setup step is needed for that — `ffmpeg` (see
+[Media thumbnails](#media-thumbnails)) is a separate story: the workflow
+installs it explicitly via `apt-get` since it's *not* preinstalled.
 
 ## `add-user` script
 

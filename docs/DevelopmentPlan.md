@@ -735,10 +735,95 @@ it's the source of truth for "what's next," not a fixed roadmap.
   `GET /api/accommodations`. No changes to `src/` — the existing 132
   backend tests and frontend build are unaffected.
 
+- **Admin: delete a single user** — `docs/Spec.md`'s "User Management"
+  section picked up a new line mid-session: "Admins should through their
+  panel also have the possibilities to delete single users. This should be
+  done from the invitation management." `POST /api/admin/clear-data`
+  already deleted every non-admin user at once; there was no way to remove
+  just one.
+
+  Backend: `DELETE /api/users/:id` (`routes/users.js`, admin-only,
+  self-delete blocked with `400`). Migration `010_allow_user_deletion.sql`
+  relaxes two FK columns that would otherwise turn an ordinary member's
+  deletion into a `500`: `invites.used_by` (every user is `used_by` on their
+  own invite) → `ON DELETE CASCADE`, and
+  `accommodation_assignments`/`vehicle_assignments.assigned_by` (any user,
+  not just admins, can assign someone else) → nullable + `ON DELETE SET
+  NULL`, so deleting the *assigner* never takes down the *assignee*'s spot.
+  `invites.created_by` deliberately stays `RESTRICT` — see
+  [Architecture.md](Architecture.md#user-deletion) for why cascading that one
+  would be worse than just returning a `409`. `GET /api/auth/invites` now
+  also returns `usedBy` (the user id) alongside `usedByName`, so the frontend
+  has something to call `DELETE /api/users/:id` with.
+
+  Frontend: `AdminInvitesPage.jsx` gained a "Nutzer löschen" button on each
+  used invite, behind a confirmation `Modal` (reusing `AdminPage.css`'s
+  `.admin-danger-button`) — a plain confirm rather than Clear Data's
+  type-to-confirm phrase, proportionate to deleting one member instead of an
+  entire season's data.
+
+  Tests: `tests/api/users.test.js` covers the full delete (cascaded
+  flights/accommodations gone, the user's own invite gone, but a *different*
+  user's assignment the deleted user had made survives), `404` for an
+  unknown id, and `400` for self-delete; `tests/security/admin-only.test.js`
+  and `tests/security/unauthenticated.test.js` cover the route being
+  admin-only/auth-only. See [API.md](API.md#delete-apiusersid) and
+  [Architecture.md](Architecture.md#user-deletion) for details.
+
+- **Real video thumbnails** — `docs/Spec.md`'s "Media sharing" section reads,
+  on a closer second pass, as two related but distinct asks: "just a
+  thumbnail with an indication that it is a video" (satisfied by the fixed
+  placeholder built during the media gallery rework) and, immediately after,
+  "also create a thumbnail for the specific video that indicates the
+  content ... and also overlay it with something like a video symbol" — a
+  real extracted preview frame, not just a generic icon. The gallery rework
+  had explicitly deferred this exact thing (see that entry's "why no video
+  frame extraction" note) to avoid adding `ffmpeg` to the stack for what
+  read at the time as a placeholder-only requirement; the second spec
+  sentence resolves that ambiguity.
+
+  Backend: `utils/thumbnail.js`'s new `generateVideoThumbnail()` shells out
+  to a system `ffmpeg` binary (`child_process.execFile`, not an npm wrapper
+  — `fluent-ffmpeg` was tried first and dropped: deprecated/unmaintained,
+  and a one-line `execFile` call needs no wrapper) to extract a frame 0.5s
+  into the clip, then resizes it through `sharp` exactly like
+  `generateImageThumbnail()` and composites a play-button glyph (circle +
+  triangle, built as an inline SVG, sized relative to the resized frame's
+  smaller dimension) on top. Same failure-tolerance contract as the image
+  path: a missing `ffmpeg`, an unsupported codec, or a too-short clip throws,
+  `routes/media.js` catches it, and the upload still succeeds with
+  `thumbnail_name` left `NULL`. `src/Dockerfile`'s backend stage now runs
+  `apk add ffmpeg`; local dev without Docker needs it separately installed
+  and on `PATH` (documented in
+  [Architecture.md](Architecture.md#local-development)) — the same category
+  of external dependency as `clamav`.
+
+  Frontend: `MediaPage.jsx`'s `MediaThumb` now renders a video's generated
+  thumbnail as an `<img>` (the play-button overlay is already baked in
+  server-side) with the existing "Video" text badge layered on top, falling
+  back to the old icon-only placeholder only when no thumbnail exists.
+
+  Verified locally: installed `ffmpeg` via `winget` (`Gyan.FFmpeg`, not
+  preinstalled on this machine), generated a real short test clip with
+  `ffmpeg -f lavfi -i testsrc=...`, and confirmed a thumbnail with a visible
+  play button gets generated end to end through `POST /api/media`.
+
+  **Bugfix, found by CI rather than locally**: the first version of this PR
+  assumed GitHub's `ubuntu-latest` runners ship `ffmpeg` preinstalled (they
+  don't — `docker`/`docker compose` are, `ffmpeg` isn't, an easy mix-up but
+  wrong) and shipped with no workflow change. The new video-thumbnail test
+  failed in CI with `spawn ffmpeg ENOENT` even though it passed locally.
+  Fixed by adding an explicit `apt-get install -y ffmpeg` step to
+  `.github/workflows/tests.yml` before `npm test` runs. See
+  [API.md](API.md#get-apimedia) and
+  [Architecture.md](Architecture.md#media-thumbnails) for the full design.
+
 ## Next unfinished item
 
-No implementation gap remains open from the three found two sessions ago —
-this was the last of them.
+No implementation gap remains open — the two items directly above were the
+most recent ones found (a `docs/Spec.md` line for admin user deletion, and a
+closer read of the media-sharing section's two adjacent video-thumbnail
+sentences).
 
 The WhatsApp group link previously tracked here as "still outstanding" is
 **not actually a gap**: `AdminSettingsPage.jsx`/`PATCH /api/admin/settings`
