@@ -761,6 +761,74 @@ so the workflow itself only adds a teardown step afterwards. GitHub Actions'
 `ubuntu-latest` runners ship Docker and the `docker compose` plugin
 preinstalled, so no extra setup step is needed for that.
 
+## `add-user` script
+
+Per docs/Spec.md's "Test cases" section, `tests/scripts/add-user.js` logs in
+as the admin and, via the real HTTP API (no direct database access), fully
+onboards one test user: invite, registration, contact info, both flights,
+and an accommodation. See [tests/README.md](../tests/README.md#add-user-script)
+for usage.
+
+- **Targets a running instance, not the disposable test containers**:
+  every other thing in `tests/` runs against `tests/docker-compose.yml`'s
+  throwaway Postgres/ClamAV; this script instead reads `APP_BASE_URL`,
+  `ADMIN_EMAIL`, `ADMIN_PASSWORD` from the repository root's `.env` (the
+  same file `docker-compose.yml` itself uses) via
+  `node --env-file=../.env`, so it can be pointed at either a local dev
+  backend or the real deployed instance depending on what that `.env`
+  contains.
+- **Reuses `tests/helpers/client.js`'s `ApiClient`** for the cookie-jar
+  `fetch` wrapper rather than a second implementation — one `ApiClient` per
+  actor (the admin, and the newly-registered user), exactly like
+  `tests/helpers/seed.js` already does for the test suite.
+- **Password and (if left blank) email are generated, not asked**: the
+  spec's question list is name, email (optional), phone (optional),
+  Instagram handle (optional), both flights, and an accommodation — no
+  password. But `POST /api/auth/register` requires both an email and a
+  password (see [Auth](#auth)), so a missing email gets a
+  `<slug>+<random>@invite.local` placeholder and the password is always a
+  random `crypto.randomBytes(9)` string; both are written into the saved
+  input file precisely so "re-use" is possible without either being lost.
+- **`--input <file>` (non-interactive) vs. interactive prompts** are the
+  two modes the spec describes ("It can either be given a file specifying
+  further input or it should ask for input") — not a hybrid. Whichever
+  path supplies the answers, the resolved input (with generated
+  email/password filled in) is always saved afterwards — to `--save` if
+  given, otherwise back to the `--input` path itself (so replaying the same
+  file becomes fully deterministic), otherwise a fresh
+  `scripts/output/<slug>-<timestamp>.json`. `scripts/output/` is gitignored
+  — these files carry a plaintext password.
+- **Accommodation "select an existing or adding one"**: the interactive
+  prompt lists every accommodation from `GET /api/accommodations` (fetched
+  using the already-authenticated admin client — that route only requires
+  auth, not ownership) and accepts either a list index or "neu"; the
+  `--input` file shape mirrors this as
+  `{ mode: "existing", id }` / `{ mode: "new", location, startDate, endDate, spots, notes? }`.
+  Creating a new one and self-assigning to it are two separate API calls
+  either way (`POST /api/accommodations` then `POST .../:id/assign`),
+  matching how a real user would do it through the UI.
+- **Interactive prompting uses `readline`'s async-iterator form, not
+  `rl.question()`**: `readline/promises`' `question()` only reliably
+  resolves the *first* call when stdin isn't a TTY (piped/redirected
+  input) — every later call hangs forever, reproduced independently of this
+  script's own logic with a 3-line minimal repro. Consuming the interface
+  via `rl[Symbol.asyncIterator]()` instead (a small `makeAsker()` helper
+  that prints the prompt text itself, then awaits the iterator's next line)
+  works identically for a real interactive terminal and for piped/file
+  input, so this is what every prompt in this script uses.
+- **No new dependency**: `node:readline`, `node:crypto`, `node:fs/promises`
+  are all built in — matching this project's existing "no framework unless
+  it earns its place" stance (see [Testing](#testing)'s choice of Node's
+  built-in test runner over a third-party one).
+
+Verified end to end against a local backend running on the disposable test
+Postgres/ClamAV containers: both `--input` (twice — once creating a new
+accommodation, once assigning to an existing one, and once with every
+optional field omitted to confirm the placeholder-email/skip-profile-PATCH
+paths) and interactive-prompt runs correctly created the user, contact
+info, both flights, and the accommodation assignment, confirmed by reading
+them back via `GET /api/users`/`GET /api/flights`/`GET /api/accommodations`.
+
 ## Deployment
 
 `docker-compose.yml` defines four services:

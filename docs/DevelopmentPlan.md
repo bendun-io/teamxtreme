@@ -686,28 +686,61 @@ it's the source of truth for "what's next," not a fixed roadmap.
   backend tests are unaffected (not re-run for this change beyond the
   `npm run build` frontend check).
 
+- **Admin CLI script for adding a test user** — `docs/Spec.md`'s "Test
+  cases" section asks for "a script for testing that takes from .env the
+  admin credentials and asks questions to add a user ... name, email
+  (optional), phone (optional), instagram handle (optional), arrival flight
+  information, departing flight information, accommodation (either select
+  an existing or adding one) ... create a file specifying the input (for
+  re-use) and create the entry in the deployed system corresponding via
+  http requests." Nothing like this existed — the largest of the three
+  gaps found two sessions ago, passed over twice before in favor of
+  smaller, more clearly-scoped work.
+
+  `tests/scripts/add-user.js`: logs in as the admin (`ADMIN_EMAIL`/
+  `ADMIN_PASSWORD`/`APP_BASE_URL` from the repository root's `.env`,
+  targeting either a local dev backend or the real deployed instance),
+  then either reads a JSON `--input` file or prompts interactively for
+  every field the spec lists, generating an email placeholder and a
+  password when needed (neither is optional for the real registration API,
+  even though the spec's question list has no password at all). It creates
+  an invite, completes registration, sets contact fields, adds both
+  flights, and creates-or-assigns an accommodation — all via the real HTTP
+  API (no direct database access), reusing `tests/helpers/client.js`'s
+  `ApiClient` rather than a second cookie-jar implementation. The resolved
+  input (generated fields included) is always saved back to a JSON file
+  for re-use. Full design in
+  [Architecture.md](Architecture.md#add-user-script), usage in
+  [tests/README.md](../tests/README.md#add-user-script).
+
+  One real bug surfaced only by actually running the interactive path, not
+  by reasoning about the code: `readline/promises`' `rl.question()` only
+  reliably resolves the *first* call when stdin isn't a TTY — every
+  subsequent call hangs forever, reproduced independently of this script
+  with a 3-line repro before concluding it wasn't a bug in the script's own
+  logic. Fixed by consuming the `readline` interface as an async iterator
+  instead (a small `makeAsker()` helper), which works identically for a
+  real terminal and for piped/redirected input.
+
+  Verified end to end against a local backend on the disposable test
+  Postgres/ClamAV containers (never the deployed instance): `--input` runs
+  covering a new accommodation, an existing one, and every optional field
+  omitted (confirming the placeholder-email and skip-profile-PATCH paths);
+  an interactive run driven by redirected stdin after the readline fix.
+  Each run's created user/flights/accommodation were confirmed by reading
+  them back via `GET /api/users`/`GET /api/flights`/
+  `GET /api/accommodations`. No changes to `src/` — the existing 132
+  backend tests and frontend build are unaffected.
+
 ## Next unfinished item
 
-One gap found in the previous session, not yet built:
-
-**No admin CLI script for adding a test user.** `docs/Spec.md`'s "Test
-cases" section asks for "a script for testing that takes from .env the
-admin credentials and asks questions to add a user ... name, email
-(optional), phone (optional), instagram handle (optional), arrival flight
-information, departing flight information, accommodation (either select an
-existing or adding one) ... create a file specifying the input (for re-use)
-and create the entry in the deployed system corresponding via http
-requests." Nothing like this exists yet — it's a larger, standalone piece
-of tooling (interactive prompts, admin login, invite creation,
-flight/accommodation creation via the real API, reading a saved input file
-to skip the prompts) rather than a small fix, which is why it's been passed
-over twice now in favor of smaller, more clearly-scoped gaps.
-
-The still-open placeholder WhatsApp group link (blocked on the real link
-existing, not on implementation work) also remains outstanding.
+No implementation gap remains open from the three found two sessions ago —
+this was the last of them. The still-open placeholder WhatsApp group link
+(blocked on the real link existing, not on implementation work) remains
+outstanding.
 
 A fresh read-through of the spec section by section against `src/` is still
 the right first step next time, rather than trusting this file's own status
 list as exhaustive (that's how the Kalender nav item, Activities, the
-Vehicles gap, the CI workflow, and this session's Flights overlay were each
-found).
+Vehicles gap, the CI workflow, the Flights overlay, and this add-user
+script were each found).
