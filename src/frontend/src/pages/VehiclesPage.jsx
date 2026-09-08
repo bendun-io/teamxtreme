@@ -136,8 +136,10 @@ function VehiclesPage() {
           <span className="assignable-title">
             {v.startingPoint} → {v.endingPoint}
           </span>
-          <span className="assignable-meta">{v.assignments.length} zugeteilt</span>
         </div>
+        <p className={`assignable-meta assignable-spots${v.freeSpots < 0 ? ' assignable-spots--over' : ''}`}>
+          {v.seats} {v.seats === 1 ? 'Platz' : 'Plätze'} · {v.freeSpots} frei
+        </p>
         {v.departureTime && <p className="assignable-time">{formatDateTime(v.departureTime)}</p>}
         {v.details && <p className="assignable-notes">{v.details}</p>}
         <p className="assignable-owner">

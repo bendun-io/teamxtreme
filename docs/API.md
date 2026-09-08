@@ -161,11 +161,15 @@ assignment shape as Accommodations otherwise (anyone can create one and
 assign anyone; only the assigned user can accept a pending assignment).
 
 #### `GET /api/vehicles`
-**200** `{ "vehicles": [{ id, createdBy, createdByName, startingPoint, endingPoint, departureTime, seats, details, createdAt, assignments: [...] }] }`,
+**200** `{ "vehicles": [{ id, createdBy, createdByName, startingPoint, endingPoint, departureTime, seats, details, freeSpots, createdAt, assignments: [...] }] }`,
 ordered by `departureTime` ascending (a `null` `departureTime` — a ride
-created before this field existed — sorts last). The frontend splits this
-into "upcoming" (shown by default) and "past" (behind a toggle) — see
-[Architecture.md](Architecture.md#vehicles--ride-sharing).
+created before this field existed — sorts last). `freeSpots` is `seats`
+minus the number of assignments (pending *and* accepted both count, same as
+accommodations); unlike accommodations' `freeSpots` it's never `null` since
+`seats` is required. Not clamped at 0 — assigning isn't capacity-checked, so
+a negative value signals more people are assigned than there's room for. The
+frontend splits this into "upcoming" (shown by default) and "past" (behind a
+toggle) — see [Architecture.md](Architecture.md#vehicles--ride-sharing).
 
 #### `POST /api/vehicles`
 Body: `{ startingPoint, endingPoint, departureTime, seats, details? }`.

@@ -72,6 +72,37 @@ test('listing vehicles returns ride fields, ordered by departure time ascending'
   assert.equal(listRes.body.vehicles[0].endingPoint, 'Málaga');
 });
 
+test('free spots is seats minus the number of assignments, regardless of status', async () => {
+  const { client: creator } = await seedUser('veh-free1@test.local');
+  const { client: other } = await seedUser('veh-free2@test.local');
+
+  const createRes = await creator.post('/api/vehicles', { ...futureRide(), seats: 2 });
+  const vehicle = createRes.body.vehicle;
+  assert.equal(vehicle.seats, 2);
+  assert.equal(vehicle.freeSpots, 2);
+
+  const { user: otherUser } = await loginAsNewUser(baseUrl, {
+    email: 'veh-free3@test.local',
+    password: 'pw123456',
+    name: 'Third',
+  });
+
+  await creator.post(`/api/vehicles/${vehicle.id}/assign`, {});
+  const afterSelf = await creator.get('/api/vehicles');
+  assert.equal(afterSelf.body.vehicles[0].freeSpots, 1);
+
+  // A pending (not yet accepted) assignment still counts against free spots.
+  await creator.post(`/api/vehicles/${vehicle.id}/assign`, { userId: otherUser.id });
+  const afterPending = await creator.get('/api/vehicles');
+  assert.equal(afterPending.body.vehicles[0].freeSpots, 0);
+
+  // Assigning beyond capacity isn't blocked (mirrors accommodations) — free
+  // spots goes negative rather than being clamped, signalling an overbooking.
+  await other.post(`/api/vehicles/${vehicle.id}/assign`, {});
+  const overbooked = await creator.get('/api/vehicles');
+  assert.equal(overbooked.body.vehicles[0].freeSpots, -1);
+});
+
 test('self-assign is accepted; assigning another user is pending until accepted', async () => {
   const { client: creator } = await seedUser('veh2@test.local');
   const { client: assignee, user: assigneeUser } = await seedUser('veh3@test.local');

@@ -791,6 +791,17 @@ column itself stays nullable for backward compatibility.
   primary-colored text button) for the same "click a name to see contact
   info" affordance, and `.assignable-toggle-past`/`.assignable-list--past`
   are new rules for the collapsed section.
+- **Free spots** (added on a later "continue development" pass — the spec's
+  "if there are free spots in the car" wording had gone unimplemented):
+  `routes/vehicles.js`'s `publicVehicle()` now returns `freeSpots`
+  (`seats - assignments.length`), the exact same shape as
+  [accommodations' `freeSpots`](#accommodation-capacity) — pending *and*
+  accepted assignments both count, and it's not clamped at 0 for the same
+  overbooking-signal reason. Unlike accommodations there's no `null` case:
+  `vehicles.seats` has always been `NOT NULL`. `VehiclesPage.jsx` renders it
+  with the exact same `.assignable-spots`/`.assignable-spots--over` markup
+  `AccommodationsPage.jsx` already uses (both pull from the shared
+  `AssignableList.css`), replacing the old "N zugeteilt" line.
 
 ## Calendar arrival/departure markers
 
