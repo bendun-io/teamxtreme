@@ -893,12 +893,46 @@ it's the source of truth for "what's next," not a fixed roadmap.
   it gained a `loadFlights()` call alongside its existing vehicles/users
   fetches.
 
+- **Vehicles "free spots" gap** — a user asked to double-check "everything is
+  implemented, especially ride sharing" against `docs/Spec.md`. The spec's
+  "Core information sharing" section requires rides to show "if there are
+  free spots in the car," and `AccommodationsPage.jsx` already shows this
+  exact thing for accommodations (`freeSpots` = `spots - assignments.length`,
+  from `routes/accommodations.js`'s `publicAccommodation()`) — but
+  `routes/vehicles.js`'s `publicVehicle()` never computed the equivalent
+  field, and `VehiclesPage.jsx` only ever showed "N zugeteilt" (assigned
+  count), never how many seats were actually left. A comment already sitting
+  in `routes/accommodations.js` ("same as vehicles" re: non-capacity-checked
+  assigning) pointed at this being an oversight rather than a deliberate
+  omission.
+
+  Fixed by mirroring accommodations exactly: `routes/vehicles.js`'s
+  `publicVehicle()` now returns `freeSpots` (`seats - assignments.length`,
+  pending and accepted both counting, not clamped at 0 for the same
+  overbooking-signal reason) — simpler than accommodations' version since
+  `vehicles.seats` has always been `NOT NULL`, so there's no `null` case to
+  handle. `VehiclesPage.jsx` renders it with the exact same
+  `.assignable-spots`/`.assignable-spots--over` markup `AccommodationsPage.jsx`
+  already uses (both share `AssignableList.css`), replacing the old "N
+  zugeteilt" line. See [API.md](API.md#get-apivehicles) and
+  [Architecture.md](Architecture.md#vehicles--ride-sharing) for details.
+
+  Tests: `tests/api/vehicles.test.js` gained a case mirroring
+  `tests/api/accommodations.test.js`'s existing free-spots test (self-assign,
+  a pending assign, then an over-capacity assign — asserting 2 → 1 → 0 → -1).
+  144 tests total, all passing. Verified the rest of the "Core information
+  sharing" section's ride-sharing requirements were already correctly built
+  (clickable owner name re-using the contact overlay, future/past split with
+  ascending sort) by reading `VehiclesPage.jsx` and `routes/vehicles.js`
+  directly rather than trusting this file's prior "done" status — a full
+  read-through of the rest of `docs/Spec.md` against `src/` turned up no
+  other gaps this session.
+
 ## Next unfinished item
 
 No implementation gap remains open — the item directly above was the most
-recent one found (a spec-mandated upload indicator that wasn't actually
-blocking, and a new spec sentence adding arrival/leave dates to the shared
-user overlay).
+recent one found (rides never showed their free spots, unlike
+accommodations, despite the spec explicitly asking for it).
 
 The WhatsApp group link previously tracked here as "still outstanding" is
 **not actually a gap**: `AdminSettingsPage.jsx`/`PATCH /api/admin/settings`

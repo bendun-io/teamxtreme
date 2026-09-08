@@ -22,6 +22,11 @@ function publicVehicle(v) {
     seats: v.seats,
     details: v.details,
     createdAt: v.created_at,
+    // seats is NOT NULL (unlike accommodations.spots), so this is always a
+    // number. Not clamped at 0: assigning isn't capacity-checked, so a
+    // negative value is a deliberate overbooking signal — same reasoning as
+    // routes/accommodations.js's freeSpots.
+    freeSpots: v.seats - v.assignments.length,
     assignments: v.assignments,
   };
 }
