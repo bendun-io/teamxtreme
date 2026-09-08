@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal.jsx';
 import MediaThumb from '../components/MediaThumb.jsx';
+import Spinner from '../components/Spinner.jsx';
 import { useMediaCount } from '../media/MediaCountContext.jsx';
 import './MediaPage.css';
 
@@ -69,15 +70,20 @@ function MediaPage() {
           ← Zurück
         </Link>
 
-        <section className="card">
+        <section className="card media-upload-card">
           <h2>Foto oder Video teilen</h2>
           {error && <p className="auth-error">{error}</p>}
           <form onSubmit={handleUpload} className="media-upload-form">
-            <input type="file" accept="image/*,video/*" ref={fileInputRef} required />
+            <input type="file" accept="image/*,video/*" ref={fileInputRef} required disabled={uploading} />
             <button type="submit" disabled={uploading}>
-              {uploading ? 'Wird hochgeladen…' : 'Hochladen'}
+              Hochladen
             </button>
           </form>
+          {uploading && (
+            <div className="blocking-overlay">
+              <Spinner label="Wird hochgeladen…" />
+            </div>
+          )}
         </section>
 
         <section className="card">

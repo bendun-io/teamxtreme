@@ -1,3 +1,7 @@
+.media-upload-card {
+  position: relative;
+}
+
 .media-upload-form {
   display: flex;
   flex-direction: column;

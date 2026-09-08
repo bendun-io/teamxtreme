@@ -858,11 +858,47 @@ it's the source of truth for "what's next," not a fixed roadmap.
   name, and the photos & videos card shows two thumbnails; no console
   errors beyond the expected pre-login `/api/auth/me` 401s.
 
+- **Blocking upload indicator + arrival/leave date on the user overlay** —
+  two gaps found on a re-read: `docs/Spec.md`'s "Media sharing" section says
+  "Show some uploading indication in the user interface while a file is
+  uploaded", but `MediaPage.jsx` only swapped the submit button's label to
+  "Wird hochgeladen…" and disabled the button — the file input stayed
+  interactive and nothing visually blocked the card, so it didn't read as a
+  real busy state. Separately, the user asked for the Calendar view's
+  contact overlay (`docs/Spec.md`'s "Calendar view" section) to also show
+  each person's arrival and leave date alongside their contact links — that
+  sentence was added to the spec in the same session.
+
+  Frontend only, no schema/API changes. New `components/Spinner.jsx` (+
+  `Spinner.css`) — a small CSS-animated circle plus an optional label, and a
+  reusable `.blocking-overlay` class (absolutely positioned, translucent,
+  `z-index: 1`) that covers its `position: relative` parent card and
+  intercepts clicks while it's rendered. `MediaPage.jsx`'s upload card now
+  renders that overlay (with a "Wird hochgeladen…" `Spinner`) whenever
+  `uploading` is true, and the file input is now also `disabled` during
+  upload (previously only the submit button was).
+
+  For the travel dates: new `utils/travelDates.js` exports
+  `getUserTravelDates(userId, flights)`, applying the same earliest/
+  latest-flight convention as `HomePage.jsx`'s `buildFlightLegs()` and
+  `CalendarPage.jsx`'s row-building (earliest flight's arrival = arrival
+  date, latest flight's departure = leave date, only once a second flight
+  exists). `ContactLinks.jsx` gained optional `arrival`/`departure` Date
+  props, rendered as a small date block above the contact links (or above
+  the "no contact info" placeholder) when either is present. Since the same
+  `Modal` + `ContactLinks` "user card" pattern is shared by `CalendarPage`,
+  `FlightsPage`, and `VehiclesPage` (all three re-use it per spec, not just
+  Calendar), all three now pass `getUserTravelDates(selectedUserId, flights)`
+  in — `VehiclesPage.jsx` didn't previously fetch `/api/flights` at all, so
+  it gained a `loadFlights()` call alongside its existing vehicles/users
+  fetches.
+
 ## Next unfinished item
 
 No implementation gap remains open — the item directly above was the most
-recent one found (two new `docs/Spec.md` sentences in the "Starting Page"
-section: homepage flight buddies and the recent-media preview).
+recent one found (a spec-mandated upload indicator that wasn't actually
+blocking, and a new spec sentence adding arrival/leave dates to the shared
+user overlay).
 
 The WhatsApp group link previously tracked here as "still outstanding" is
 **not actually a gap**: `AdminSettingsPage.jsx`/`PATCH /api/admin/settings`
