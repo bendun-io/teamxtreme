@@ -1,5 +1,5 @@
 import path from 'node:path';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadMiddleware, isAcceptedMediaFile, isImageFile, isVideoFile } from '../utils/scanUpload.js';
@@ -75,7 +75,7 @@ router.get('/download-all', asyncHandler(async (req, res) => {
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', 'attachment; filename="teamxtreme-media.zip"');
 
-  const archive = archiver('zip');
+  const archive = new ZipArchive();
   archive.on('warning', (err) => console.warn('zip archive warning:', err));
   archive.on('error', (err) => {
     console.error('zip archive failed on GET /api/media/download-all:', err);
