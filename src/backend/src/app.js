@@ -66,7 +66,7 @@ app.use(express.static(publicDir));
 
 // SPA fallback: any non-API route serves the frontend shell so client-side
 // routing works on a hard refresh / deep link.
-app.get('*', (req, res, next) => {
+app.get('/*splat', (req, res, next) => {
   if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(publicDir, 'index.html'), (err) => {
     if (err) next(err);
