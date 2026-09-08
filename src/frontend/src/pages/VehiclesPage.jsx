@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import Modal from '../components/Modal.jsx';
 import ContactLinks from '../components/ContactLinks.jsx';
+import { getUserTravelDates } from '../utils/travelDates.js';
 import './AssignableList.css';
 
 const emptyForm = { startingPoint: '', endingPoint: '', departureTime: '', seats: '', details: '' };
@@ -19,6 +20,7 @@ function VehiclesPage() {
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState([]);
   const [users, setUsers] = useState([]);
+  const [flights, setFlights] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -42,9 +44,18 @@ function VehiclesPage() {
     }
   }
 
+  async function loadFlights() {
+    const res = await fetch('/api/flights', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      setFlights(data.flights);
+    }
+  }
+
   useEffect(() => {
     loadVehicles();
     loadUsers();
+    loadFlights();
   }, []);
 
   async function handleSubmit(e) {
@@ -266,7 +277,10 @@ function VehiclesPage() {
 
       {selectedUserId && (
         <Modal title={usersById[selectedUserId]?.name || 'Kontakt'} onClose={() => setSelectedUserId(null)}>
-          <ContactLinks user={usersById[selectedUserId]} />
+          <ContactLinks
+            user={usersById[selectedUserId]}
+            {...getUserTravelDates(selectedUserId, flights)}
+          />
         </Modal>
       )}
     </div>

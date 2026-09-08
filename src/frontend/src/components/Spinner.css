@@ -1,0 +1,36 @@
+.spinner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.spinner-circle {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spinner-rotate 0.7s linear infinite;
+}
+
+.spinner-label {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.blocking-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: inherit;
+  z-index: 1;
+}

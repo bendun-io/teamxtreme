@@ -118,7 +118,7 @@ The navigation should use appropriate icons and avoid text whenever possible.
 ### Calendar view
 
 - There should be a calendar view in a table format. It should start with the first flight as first column and end with the last returning flight as columns. Then it should have one row per user and visualize in the fields if the user is already there and not yet returned as well as the accomodation the user is staying. The users should be sorted by arrival time (first flight).
-- In the calendar view, when clicked on a user, it should open an overlay that shows the different contact options for the user, i.e., the mail adress with an icon to click on that has a mailto link, similar a phone and a whatsapp link and an instagram link.
+- In the calendar view, when clicked on a user, it should open an overlay that shows the different contact options for the user, i.e., the mail adress with an icon to click on that has a mailto link, similar a phone and a whatsapp link and an instagram link. In addition to the contact possibilities, this user overlay should also show the user's arrival and leave date (derived from their flights).
 - The day of arrival in the calendar view should be marked by a landing plane and the day of leaving by a departing one.
 - Days with a confirmed accomodation should be marked in green.
 

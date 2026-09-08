@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal.jsx';
 import ContactLinks from '../components/ContactLinks.jsx';
+import { getUserTravelDates } from '../utils/travelDates.js';
 import './CalendarPage.css';
 
 function pad(n) {
@@ -231,7 +232,10 @@ function CalendarPage() {
       </main>
       {selectedUserId && (
         <Modal title={usersById[selectedUserId]?.name || 'Kontakt'} onClose={() => setSelectedUserId(null)}>
-          <ContactLinks user={usersById[selectedUserId]} />
+          <ContactLinks
+            user={usersById[selectedUserId]}
+            {...getUserTravelDates(selectedUserId, flights)}
+          />
         </Modal>
       )}
     </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import Modal from '../components/Modal.jsx';
 import ContactLinks from '../components/ContactLinks.jsx';
+import { getUserTravelDates } from '../utils/travelDates.js';
 import '../components/ResourceList.css';
 
 const emptyForm = {
@@ -238,7 +239,10 @@ function FlightsPage() {
 
       {selectedUserId && (
         <Modal title={usersById[selectedUserId]?.name || 'Kontakt'} onClose={() => setSelectedUserId(null)}>
-          <ContactLinks user={usersById[selectedUserId]} />
+          <ContactLinks
+            user={usersById[selectedUserId]}
+            {...getUserTravelDates(selectedUserId, flights)}
+          />
         </Modal>
       )}
     </div>

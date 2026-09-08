@@ -43,9 +43,14 @@ function whatsappHref(phone) {
   return `https://wa.me/${digits.replace(/^\+/, '')}`;
 }
 
+function formatDate(date) {
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 // Contact fields are optional (see SettingsPage) — only render the ones a
-// user actually filled in.
-function ContactLinks({ user }) {
+// user actually filled in. arrival/departure are optional Date objects
+// (see utils/travelDates.js) derived from the user's flights.
+function ContactLinks({ user, arrival, departure }) {
   const links = [];
   if (user?.email) {
     links.push({ key: 'mail', icon: 'mail', label: user.email, href: `mailto:${user.email}` });
@@ -63,26 +68,44 @@ function ContactLinks({ user }) {
     });
   }
 
-  if (links.length === 0) {
-    return <p className="contact-links-empty">Keine Kontaktdaten hinterlegt.</p>;
-  }
-
   return (
-    <ul className="contact-links">
-      {links.map((link) => (
-        <li key={link.key}>
-          <a
-            href={link.href}
-            target={link.key === 'whatsapp' || link.key === 'instagram' ? '_blank' : undefined}
-            rel={link.key === 'whatsapp' || link.key === 'instagram' ? 'noreferrer' : undefined}
-            className="contact-link"
-          >
-            <span className="contact-link-icon">{icons[link.icon]}</span>
-            <span className="contact-link-label">{link.label}</span>
-          </a>
-        </li>
-      ))}
-    </ul>
+    <>
+      {(arrival || departure) && (
+        <dl className="contact-travel-dates">
+          {arrival && (
+            <div>
+              <dt>Ankunft</dt>
+              <dd>{formatDate(arrival)}</dd>
+            </div>
+          )}
+          {departure && (
+            <div>
+              <dt>Abreise</dt>
+              <dd>{formatDate(departure)}</dd>
+            </div>
+          )}
+        </dl>
+      )}
+      {links.length === 0 ? (
+        <p className="contact-links-empty">Keine Kontaktdaten hinterlegt.</p>
+      ) : (
+        <ul className="contact-links">
+          {links.map((link) => (
+            <li key={link.key}>
+              <a
+                href={link.href}
+                target={link.key === 'whatsapp' || link.key === 'instagram' ? '_blank' : undefined}
+                rel={link.key === 'whatsapp' || link.key === 'instagram' ? 'noreferrer' : undefined}
+                className="contact-link"
+              >
+                <span className="contact-link-icon">{icons[link.icon]}</span>
+                <span className="contact-link-label">{link.label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
