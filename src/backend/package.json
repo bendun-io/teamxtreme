@@ -11,7 +11,7 @@
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "bcryptjs": "^3.0.3",
     "clamscan": "^2.4.0",
     "cookie-parser": "^1.4.6",
