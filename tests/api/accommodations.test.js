@@ -78,6 +78,52 @@ test('free spots is spots minus the number of assignments, regardless of status'
   assert.equal(overbooked.body.accommodations[0].freeSpots, -1);
 });
 
+test('price is optional, but must be a positive number when given', async () => {
+  const { client } = await seedUser('acc-price-invalid@test.local');
+  const base = { location: 'Hotel X', startDate: '2026-06-01', endDate: '2026-06-08', spots: 4 };
+
+  const noPrice = await client.post('/api/accommodations', base);
+  assert.equal(noPrice.status, 201);
+  assert.equal(noPrice.body.accommodation.price, null);
+
+  const zero = await client.post('/api/accommodations', { ...base, price: 0 });
+  assert.equal(zero.status, 400);
+
+  const negative = await client.post('/api/accommodations', { ...base, price: -10 });
+  assert.equal(negative.status, 400);
+});
+
+test('price is split into a per-night and a per-person share', async () => {
+  const { client: creator } = await seedUser('acc-price1@test.local');
+
+  const createRes = await creator.post('/api/accommodations', {
+    location: 'Hotel Price',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08', // 7 nights
+    spots: 4,
+    price: 700,
+  });
+  const accommodation = createRes.body.accommodation;
+  assert.equal(accommodation.price, 700);
+  assert.equal(accommodation.pricePerNight, 100);
+  // Nobody assigned yet — nothing to divide the total among.
+  assert.equal(accommodation.pricePerPerson, null);
+
+  await creator.post(`/api/accommodations/${accommodation.id}/assign`, {});
+  const afterSelf = await creator.get('/api/accommodations');
+  assert.equal(afterSelf.body.accommodations[0].pricePerPerson, 700);
+
+  // A second (still-pending) assignment counts too, same as freeSpots.
+  const { user: otherUser } = await loginAsNewUser(baseUrl, {
+    email: 'acc-price3@test.local',
+    password: 'pw123456',
+    name: 'Third',
+  });
+  await creator.post(`/api/accommodations/${accommodation.id}/assign`, { userId: otherUser.id });
+  const afterPending = await creator.get('/api/accommodations');
+  assert.equal(afterPending.body.accommodations[0].pricePerPerson, 350);
+});
+
 test('self-assign is created already accepted', async () => {
   const { client } = await seedUser('acc2@test.local');
   const createRes = await client.post('/api/accommodations', {

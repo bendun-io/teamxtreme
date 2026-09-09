@@ -64,6 +64,7 @@ The admin menu should contain cards with different features / subnavigations. Th
 
 - Everyone should be able to add their flight information and there should be an overview of flights. The name of the person in the overview should be clickable and show the user overlay.
 - People should be able to add an accomodation and people should be able to assign themselves or beeing assigned (accept that assignment) to an accomodation. The accomodation should have a location and a start and endate plus a field for extra information. Furthermore, the accomodation should also have a number of (free) spots. The free spots are the spots minus the assigned users.
+- The accomodation should also have a price, set by the person adding it. From that price and the accomodation's duration, calculate a price per night, and distribute every night's price among the people assigned to the accomodation, so everyone can see their own share of the total price in the accommodation view.
 - Also add some rides in there with startingpoint and endpoint and if there are free spots in the car. In the list view of the rides, make the one offering the ride clickable and re-use the user overlay for that.
 - Only show rides that are in the future and at the bottom have a symbol to click and then also show past rides blow. Sort the future rides ascending in time.
 

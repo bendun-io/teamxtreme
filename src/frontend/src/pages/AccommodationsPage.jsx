@@ -3,11 +3,17 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import './AssignableList.css';
 
-const emptyForm = { location: '', startDate: '', endDate: '', spots: '', notes: '' };
+const emptyForm = { location: '', startDate: '', endDate: '', spots: '', price: '', notes: '' };
 
 function formatDate(value) {
   if (!value) return null;
   return new Date(value).toLocaleDateString('de-DE', { dateStyle: 'medium' });
+}
+
+const currencyFormat = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+
+function formatCurrency(value) {
+  return currencyFormat.format(value);
 }
 
 function AccommodationsPage() {
@@ -137,6 +143,14 @@ function AccommodationsPage() {
               onChange={(e) => setForm({ ...form, spots: e.target.value })}
               required
             />
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="Preis gesamt in € (optional)"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
             <textarea
               placeholder="Zusatzinformationen"
               value={form.notes}
@@ -168,6 +182,13 @@ function AccommodationsPage() {
                   {a.spots != null && (
                     <p className={`assignable-meta assignable-spots${a.freeSpots < 0 ? ' assignable-spots--over' : ''}`}>
                       {a.spots} {a.spots === 1 ? 'Platz' : 'Plätze'} · {a.freeSpots} frei
+                    </p>
+                  )}
+                  {a.price != null && (
+                    <p className="assignable-meta assignable-price">
+                      {formatCurrency(a.price)} gesamt
+                      {a.pricePerNight != null && <> · {formatCurrency(a.pricePerNight)}/Nacht</>}
+                      {a.pricePerPerson != null && <> · {formatCurrency(a.pricePerPerson)} pro Person</>}
                     </p>
                   )}
                   {a.notes && <p className="assignable-notes">{a.notes}</p>}
