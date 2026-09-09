@@ -125,21 +125,28 @@ pending assignment.
 #### `GET /api/accommodations`
 Overview of all accommodations with their assignments, ordered by
 `startDate` ascending.
-**200** `{ "accommodations": [{ id, createdBy, createdByName, location, startDate, endDate, notes, spots, freeSpots, createdAt, assignments: [{ id, userId, userName, assignedById, assignedByName, status, createdAt }] }] }`
+**200** `{ "accommodations": [{ id, createdBy, createdByName, location, startDate, endDate, notes, spots, freeSpots, price, pricePerNight, pricePerPerson, createdAt, assignments: [{ id, userId, userName, assignedById, assignedByName, status, createdAt }] }] }`
 — `status` is `"pending"` or `"accepted"`. `spots` is `null` for an
 accommodation created before this field existed. `freeSpots` is
 `spots` minus the number of assignments (pending *and* accepted both
 count — a spot is reserved once assigned, not only once accepted), `null`
 whenever `spots` is; it is **not** clamped at 0, since assigning isn't
 capacity-checked (same as vehicles) — a negative value signals more people
-are assigned than there's room for.
+are assigned than there's room for. `price` (total cost of the stay) is
+`null` if it was never entered. `pricePerNight` is `price` divided by the
+number of nights between `startDate`/`endDate`, `null` whenever `price` is.
+`pricePerPerson` is `price` divided by the number of assignments (pending
+and accepted both count, same as `freeSpots`), `null` whenever `price` is or
+nobody is assigned yet — see
+[Architecture.md](Architecture.md#accommodation-price).
 
 #### `POST /api/accommodations`
-Body: `{ location, startDate, endDate, spots, notes? }` (`startDate`/
-`endDate` are `YYYY-MM-DD`). Creates an accommodation owned by the caller.
+Body: `{ location, startDate, endDate, spots, price?, notes? }`
+(`startDate`/`endDate` are `YYYY-MM-DD`). Creates an accommodation owned by
+the caller. `price` is the total cost of the stay and is optional.
 **201** `{ "accommodation": {...} }`
-**400** if `location`, `startDate` or `endDate` is missing, or `spots`
-isn't a positive whole number.
+**400** if `location`, `startDate` or `endDate` is missing, `spots` isn't a
+positive whole number, or `price` is given but isn't a positive number.
 
 #### `POST /api/accommodations/:id/assign`
 Body: `{ userId? }`. Omit `userId` to assign yourself (created already

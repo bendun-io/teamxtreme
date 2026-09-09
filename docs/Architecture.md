@@ -694,6 +694,43 @@ rather than silently hiding it. A `null` `spots` (a pre-migration
 accommodation) hides the capacity line entirely instead of showing a
 misleading "0 frei".
 
+## Accommodation price
+
+Per docs/Spec.md's "Core information sharing" section ("The accomodation
+should also have a price, set by the person adding it. ... calculate a
+price per night, and distribute every night's price among the people
+assigned"), `accommodations.price` (migration
+`011_add_accommodation_price.sql`, `NUMERIC(10, 2)`, nullable) is the total
+cost of the whole stay, entered via an optional "Preis gesamt in €" field in
+`AccommodationsPage.jsx`'s add form — optional because whoever adds an
+accommodation may not know the cost yet, or it's free; unlike `spots` there
+is no requirement to fill it in. `null` (never entered, or a pre-migration
+row) hides the price line entirely, same convention as `spots`/`freeSpots`.
+
+`routes/accommodations.js`'s `publicAccommodation()` derives two figures at
+read time rather than storing them:
+
+- **`pricePerNight`** — `price / nights`, where `nights` (`nightsBetween()`)
+  is the whole number of calendar days between `startDate` and `endDate`.
+  `null` whenever that span can't be computed as a positive number of nights
+  (shouldn't happen in practice since both dates are required on creation,
+  but guards against a division by zero rather than trusting that).
+- **`pricePerPerson`** — each assigned person's share of the *total* price,
+  `price / assignments.length`, counting **every** assignment regardless of
+  `pending`/`accepted` status (same "a spot is reserved once assigned"
+  convention as `freeSpots` above). This is mathematically the same number
+  as distributing each night's cost evenly across whoever is assigned and
+  summing that back up over the whole stay — assignments aren't tracked
+  per-night, only per-accommodation, so a simpler direct division gives the
+  identical result without needing a per-night breakdown internally.
+  `null` while nobody is assigned yet (nothing to divide by).
+
+`AccommodationsPage.jsx` shows all three figures — total, per night, per
+person — on one line (`.assignable-price`) next to the existing spots line,
+each independently omitted if its value is `null`, so "everyone can see
+their price for the accommodation" per the spec without a separate query or
+route.
+
 ## Activities
 
 Per docs/Spec.md's "Activities" section, any user can create an activity
