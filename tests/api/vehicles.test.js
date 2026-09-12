@@ -133,3 +133,52 @@ test('assigning the same user twice returns 409', async () => {
   const secondRes = await client.post(`/api/vehicles/${vehicleId}/assign`, {});
   assert.equal(secondRes.status, 409);
 });
+
+test('the creator can edit a vehicle, with the same validation as creating one', async () => {
+  const { client } = await seedUser('veh-edit1@test.local');
+  const createRes = await client.post('/api/vehicles', { ...futureRide(), seats: 4, details: 'Before' });
+  const vehicleId = createRes.body.vehicle.id;
+
+  const editRes = await client.patch(`/api/vehicles/${vehicleId}`, {
+    ...futureRide(),
+    startingPoint: 'Berlin',
+    seats: 2,
+    details: 'After',
+  });
+  assert.equal(editRes.status, 200);
+  assert.equal(editRes.body.vehicle.startingPoint, 'Berlin');
+  assert.equal(editRes.body.vehicle.seats, 2);
+  assert.equal(editRes.body.vehicle.details, 'After');
+
+  const invalidRes = await client.patch(`/api/vehicles/${vehicleId}`, { ...futureRide(), seats: 0 });
+  assert.equal(invalidRes.status, 400);
+});
+
+test('editing a nonexistent vehicle returns 404', async () => {
+  const { client } = await seedUser('veh-edit2@test.local');
+  const fakeId = '00000000-0000-0000-0000-000000000000';
+  const res = await client.patch(`/api/vehicles/${fakeId}`, { ...futureRide(), seats: 1 });
+  assert.equal(res.status, 404);
+});
+
+test('the creator can delete a vehicle, which also removes its assignments', async () => {
+  const { client: creator } = await seedUser('veh-del1@test.local');
+  const { client: other, user: otherUser } = await seedUser('veh-del2@test.local');
+
+  const createRes = await creator.post('/api/vehicles', { ...futureRide(), seats: 4 });
+  const vehicleId = createRes.body.vehicle.id;
+  await creator.post(`/api/vehicles/${vehicleId}/assign`, { userId: otherUser.id });
+
+  const deleteRes = await creator.delete(`/api/vehicles/${vehicleId}`);
+  assert.equal(deleteRes.status, 204);
+
+  const listRes = await other.get('/api/vehicles');
+  assert.equal(listRes.body.vehicles.length, 0);
+});
+
+test('deleting a nonexistent vehicle returns 404', async () => {
+  const { client } = await seedUser('veh-del3@test.local');
+  const fakeId = '00000000-0000-0000-0000-000000000000';
+  const res = await client.delete(`/api/vehicles/${fakeId}`);
+  assert.equal(res.status, 404);
+});

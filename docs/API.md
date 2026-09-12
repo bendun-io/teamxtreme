@@ -120,7 +120,7 @@ created invites for other people).
 ### Accommodations
 All routes require auth. Anyone can create an accommodation and assign
 anyone (self or another user) to it; only the assigned user can accept a
-pending assignment.
+pending assignment. Only the creator may edit or delete it.
 
 #### `GET /api/accommodations`
 Overview of all accommodations with their assignments, ordered by
@@ -148,6 +148,17 @@ the caller. `price` is the total cost of the stay and is optional.
 **400** if `location`, `startDate` or `endDate` is missing, `spots` isn't a
 positive whole number, or `price` is given but isn't a positive number.
 
+#### `PATCH /api/accommodations/:id`
+Body: same shape as `POST` (full replace, not a partial patch — the frontend
+edit form always sends every field). Only the creator may edit.
+**200** `{ "accommodation": {...} }`
+**400** same validation as `POST`. **403** not the creator. **404** not found.
+
+#### `DELETE /api/accommodations/:id`
+Only the creator may delete. Assignments on it are removed too (`ON DELETE
+CASCADE`).
+**204**, no body. **403** not the creator. **404** not found.
+
 #### `POST /api/accommodations/:id/assign`
 Body: `{ userId? }`. Omit `userId` to assign yourself (created already
 `accepted`); pass another user's id to assign them (created `pending` until
@@ -166,6 +177,7 @@ A "ride" (still the `vehicles` route/table name): a starting point, an
 ending point, a departure time, seats (capacity) and freeform details. Same
 assignment shape as Accommodations otherwise (anyone can create one and
 assign anyone; only the assigned user can accept a pending assignment).
+Only the creator may edit or delete it.
 
 #### `GET /api/vehicles`
 **200** `{ "vehicles": [{ id, createdBy, createdByName, startingPoint, endingPoint, departureTime, seats, details, freeSpots, createdAt, assignments: [...] }] }`,
@@ -183,6 +195,16 @@ Body: `{ startingPoint, endingPoint, departureTime, seats, details? }`.
 **201** `{ "vehicle": {...} }`
 **400** if `startingPoint`, `endingPoint` or `departureTime` is missing, or
 `seats` is missing or not a positive number.
+
+#### `PATCH /api/vehicles/:id`
+Body: same shape as `POST` (full replace). Only the creator may edit.
+**200** `{ "vehicle": {...} }`
+**400** same validation as `POST`. **403** not the creator. **404** not found.
+
+#### `DELETE /api/vehicles/:id`
+Only the creator may delete. Assignments on it are removed too (`ON DELETE
+CASCADE`).
+**204**, no body. **403** not the creator. **404** not found.
 
 #### `POST /api/vehicles/:id/assign`
 Body: `{ userId? }` — mirrors accommodations' assign endpoint.

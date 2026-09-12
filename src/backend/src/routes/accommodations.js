@@ -4,6 +4,8 @@ import {
   listAccommodations,
   findAccommodationById,
   createAccommodation,
+  updateAccommodation,
+  deleteAccommodation,
   findAssignmentById,
   createAssignment,
   acceptAssignment,
@@ -64,14 +66,17 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ accommodations: accommodations.map(publicAccommodation) });
 }));
 
-router.post('/', asyncHandler(async (req, res) => {
-  const { location, startDate, endDate, notes, spots, price } = req.body || {};
+// Shared by POST and PATCH: both accept the same fields under the same
+// rules, so validation lives in one place rather than being duplicated (and
+// risking drifting apart) between create and edit.
+function parseAccommodationInput(body) {
+  const { location, startDate, endDate, notes, spots, price } = body || {};
   if (!location || !startDate || !endDate) {
-    return res.status(400).json({ error: 'location, startDate and endDate are required' });
+    return { error: 'location, startDate and endDate are required' };
   }
   const spotsNumber = Number(spots);
   if (!spotsNumber || spotsNumber <= 0 || !Number.isInteger(spotsNumber)) {
-    return res.status(400).json({ error: 'spots must be a positive whole number' });
+    return { error: 'spots must be a positive whole number' };
   }
 
   // price is optional — omit it entirely if the cost isn't known yet.
@@ -79,19 +84,40 @@ router.post('/', asyncHandler(async (req, res) => {
   if (price !== undefined && price !== null && price !== '') {
     priceNumber = Number(price);
     if (!priceNumber || priceNumber <= 0) {
-      return res.status(400).json({ error: 'price must be a positive number' });
+      return { error: 'price must be a positive number' };
     }
   }
 
-  const accommodation = await createAccommodation(req.user.id, {
-    location,
-    startDate,
-    endDate,
-    notes,
-    spots: spotsNumber,
-    price: priceNumber,
-  });
+  return { data: { location, startDate, endDate, notes, spots: spotsNumber, price: priceNumber } };
+}
+
+router.post('/', asyncHandler(async (req, res) => {
+  const { error, data } = parseAccommodationInput(req.body);
+  if (error) return res.status(400).json({ error });
+
+  const accommodation = await createAccommodation(req.user.id, data);
   res.status(201).json({ accommodation: publicAccommodation(accommodation) });
+}));
+
+router.patch('/:id', asyncHandler(async (req, res) => {
+  const existing = await findAccommodationById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'accommodation not found' });
+  if (existing.created_by !== req.user.id) return res.status(403).json({ error: 'not your accommodation' });
+
+  const { error, data } = parseAccommodationInput(req.body);
+  if (error) return res.status(400).json({ error });
+
+  const accommodation = await updateAccommodation(req.params.id, data);
+  res.json({ accommodation: publicAccommodation(accommodation) });
+}));
+
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const existing = await findAccommodationById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'accommodation not found' });
+  if (existing.created_by !== req.user.id) return res.status(403).json({ error: 'not your accommodation' });
+
+  await deleteAccommodation(req.params.id);
+  res.status(204).end();
 }));
 
 router.post('/:id/assign', asyncHandler(async (req, res) => {

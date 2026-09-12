@@ -928,11 +928,51 @@ it's the source of truth for "what's next," not a fixed roadmap.
   read-through of the rest of `docs/Spec.md` against `src/` turned up no
   other gaps this session.
 
+- **Accommodation price** — `docs/Spec.md`'s "Core information sharing"
+  section picked up a new line: accommodations gained an optional total
+  `price`, set by whoever adds them, split into a per-night rate and each
+  assigned person's share (`price / assignments.length`, pending and
+  accepted both counting — same convention as `freeSpots`), shown in the
+  accommodation view. Migration `011_add_accommodation_price.sql`
+  (`accommodations.price`, nullable). See
+  [Architecture.md](Architecture.md#accommodation-price) and
+  [API.md](API.md#accommodations) for details. 146 tests total, all passing.
+
+- **Editing core information** — `docs/Spec.md`'s "Core information sharing"
+  section picked up "The core information here, should be able to be edited
+  by the user who entered it." Flights already had owner-only edit/delete
+  from the original build-out; Accommodations and Vehicles only ever
+  supported creating and assigning, never editing or removing the entry
+  itself — the gap this closes.
+
+  Backend: `routes/accommodations.js` and `routes/vehicles.js` each gained
+  `PATCH /api/:id` and `DELETE /api/:id`, mirroring `routes/flights.js`'s
+  existing owner-only shape (403 unless `created_by === req.user.id`; `PATCH`
+  is a full replace using the same validation as `POST`, extracted into a
+  shared `parseAccommodationInput()`/`parseVehicleInput()` to avoid
+  duplicating it). `DELETE` cascades to that accommodation's/vehicle's
+  assignments automatically (existing `ON DELETE CASCADE` FKs) — no new
+  migration needed. Frontend: both pages gained the same `editingId` +
+  `startEdit()`/`cancelEdit()`/`handleDelete()` shape `FlightsPage.jsx`
+  already used, with "Bearbeiten"/"Löschen" buttons next to the creator's own
+  entry. See [Architecture.md](Architecture.md#editing-core-information) and
+  [API.md](API.md#accommodations) for details.
+
+  Tests: `tests/api/accommodations.test.js` and `tests/api/vehicles.test.js`
+  each gained edit (happy path + validation reuse + 404) and delete (happy
+  path incl. assignment cascade + 404) cases;
+  `tests/security/ownership.test.js` gained "a user cannot edit or delete
+  another user's accommodation/vehicle"; `tests/security/unauthenticated.test.js`
+  gained the four new routes. 158 tests total, all passing (pending a full
+  run after this change lands).
+
 ## Next unfinished item
 
-No implementation gap remains open — the item directly above was the most
-recent one found (rides never showed their free spots, unlike
-accommodations, despite the spec explicitly asking for it).
+The user overlay (`components/Modal.jsx` + `components/ContactLinks.jsx`,
+shared by Calendar/Flights/Vehicles) needs two more fields per a new
+`docs/Spec.md` "User overlay" section: a small profile picture, and the
+accommodation the person is staying at. Contact info and arrival/departure
+dates are already shown; picture and accommodation are not yet wired in.
 
 The WhatsApp group link previously tracked here as "still outstanding" is
 **not actually a gap**: `AdminSettingsPage.jsx`/`PATCH /api/admin/settings`

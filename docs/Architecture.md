@@ -840,6 +840,47 @@ column itself stays nullable for backward compatibility.
   `AccommodationsPage.jsx` already uses (both pull from the shared
   `AssignableList.css`), replacing the old "N zugeteilt" line.
 
+## Editing core information
+
+Per docs/Spec.md's "Core information sharing" section ("The core information
+here, should be able to be edited by the user who entered it"), accommodations
+and vehicles (rides) gained the same owner-only edit/delete capability
+Flights already had (`PATCH`/`DELETE /api/flights/:id`, from the original
+build-out) — the one gap being that Accommodations and Vehicles only ever
+supported creating and assigning, never editing or removing the entry itself.
+
+`routes/accommodations.js` and `routes/vehicles.js` each gained
+`PATCH /api/:id` and `DELETE /api/:id`, mirroring `routes/flights.js`'s
+existing shape exactly: `PATCH` does a full replace (same required fields
+and validation as `POST`, not a partial patch) and both routes 403 unless
+`existing.created_by === req.user.id` (`req.user.id` for flights, since that
+table names the column `user_id` instead of `created_by`) — assignments
+made *to* an accommodation/vehicle by someone else don't grant edit rights
+over the entry itself, only the original creator can. `DELETE` on either
+just removes the row; `accommodation_assignments`/`vehicle_assignments`
+cascade automatically (`ON DELETE CASCADE`, migration
+`002_create_flights_accommodations_vehicles.sql`), so deleting an
+accommodation or vehicle also removes everyone's assignments to it — there's
+no "orphaned assignment" state to handle.
+
+Each route's own validation (already written for `POST`) was extracted into
+a shared `parseAccommodationInput()`/`parseVehicleInput()` function reused by
+both `POST` and `PATCH`, rather than duplicating the same required-field/
+positive-number checks in two places and risking them drifting apart.
+
+Frontend: `AccommodationsPage.jsx` and `VehiclesPage.jsx` both gained the
+same `editingId` state + `startEdit()`/`cancelEdit()`/`handleDelete()` shape
+`FlightsPage.jsx` already used — the add form doubles as the edit form
+(heading and submit button label switch between "hinzufügen"/"bearbeiten"/
+"speichern", a "Abbrechen" button appears only while editing), and the
+creator's own entry gets "Bearbeiten"/"Löschen" buttons next to their name
+in the list (`.assignable-owner-actions`, new in `AssignableList.css`,
+mirroring `ResourceList.css`'s `.resource-item-actions` that `FlightsPage.jsx`
+already uses) — visible only when `createdBy === user.id`. A plain
+`window.confirm()` gates the delete, same as `FlightsPage.jsx`'s existing
+flight-delete confirmation — proportionate to deleting one entry, unlike
+Clear Data's type-to-confirm phrase for wiping an entire season.
+
 ## Calendar arrival/departure markers
 
 Per docs/Spec.md's "Calendar view" section ("The day of arrival ... marked
