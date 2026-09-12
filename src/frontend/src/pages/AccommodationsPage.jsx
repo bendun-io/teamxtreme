@@ -21,6 +21,7 @@ function AccommodationsPage() {
   const [accommodations, setAccommodations] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [assignTargets, setAssignTargets] = useState({});
@@ -46,13 +47,30 @@ function AccommodationsPage() {
     loadUsers();
   }, []);
 
+  function startEdit(a) {
+    setEditingId(a.id);
+    setForm({
+      location: a.location,
+      startDate: a.startDate,
+      endDate: a.endDate,
+      spots: String(a.spots ?? ''),
+      price: a.price != null ? String(a.price) : '',
+      notes: a.notes || '',
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/accommodations', {
-        method: 'POST',
+      const res = await fetch(editingId ? `/api/accommodations/${editingId}` : '/api/accommodations', {
+        method: editingId ? 'PATCH' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, spots: Number(form.spots) }),
@@ -61,11 +79,17 @@ function AccommodationsPage() {
         setError('Unterkunft konnte nicht gespeichert werden.');
         return;
       }
-      setForm(emptyForm);
+      cancelEdit();
       await loadAccommodations();
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Diese Unterkunft wirklich löschen?')) return;
+    const res = await fetch(`/api/accommodations/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (res.ok) await loadAccommodations();
   }
 
   async function assignSelf(accommodationId) {
@@ -106,7 +130,7 @@ function AccommodationsPage() {
         </Link>
 
         <section className="card">
-          <h2>Unterkunft hinzufügen</h2>
+          <h2>{editingId ? 'Unterkunft bearbeiten' : 'Unterkunft hinzufügen'}</h2>
           {error && <p className="auth-error">{error}</p>}
           <form onSubmit={handleSubmit} className="assignable-form">
             <input
@@ -156,9 +180,16 @@ function AccommodationsPage() {
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
-            <button type="submit" disabled={submitting}>
-              Hinzufügen
-            </button>
+            <div className="assignable-form-actions">
+              <button type="submit" disabled={submitting}>
+                {editingId ? 'Speichern' : 'Hinzufügen'}
+              </button>
+              {editingId && (
+                <button type="button" className="assignable-form-cancel" onClick={cancelEdit}>
+                  Abbrechen
+                </button>
+              )}
+            </div>
           </form>
         </section>
 
@@ -192,7 +223,19 @@ function AccommodationsPage() {
                     </p>
                   )}
                   {a.notes && <p className="assignable-notes">{a.notes}</p>}
-                  <p className="assignable-owner">Eingetragen von {a.createdByName}</p>
+                  <p className="assignable-owner">
+                    Eingetragen von {a.createdByName}
+                    {a.createdBy === user?.id && (
+                      <span className="assignable-owner-actions">
+                        <button type="button" onClick={() => startEdit(a)}>
+                          Bearbeiten
+                        </button>
+                        <button type="button" onClick={() => handleDelete(a.id)}>
+                          Löschen
+                        </button>
+                      </span>
+                    )}
+                  </p>
 
                   <ul className="assignment-list">
                     {a.assignments.map((asg) => (

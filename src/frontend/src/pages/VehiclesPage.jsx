@@ -16,12 +16,20 @@ function formatDateTime(value) {
   });
 }
 
+function toFormValue(isoString) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function VehiclesPage() {
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState([]);
   const [users, setUsers] = useState([]);
   const [flights, setFlights] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [assignTargets, setAssignTargets] = useState({});
@@ -58,13 +66,29 @@ function VehiclesPage() {
     loadFlights();
   }, []);
 
+  function startEdit(v) {
+    setEditingId(v.id);
+    setForm({
+      startingPoint: v.startingPoint || '',
+      endingPoint: v.endingPoint || '',
+      departureTime: toFormValue(v.departureTime),
+      seats: String(v.seats),
+      details: v.details || '',
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/vehicles', {
-        method: 'POST',
+      const res = await fetch(editingId ? `/api/vehicles/${editingId}` : '/api/vehicles', {
+        method: editingId ? 'PATCH' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,11 +103,17 @@ function VehiclesPage() {
         setError('Fahrt konnte nicht gespeichert werden.');
         return;
       }
-      setForm(emptyForm);
+      cancelEdit();
       await loadVehicles();
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Diese Fahrt wirklich löschen?')) return;
+    const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (res.ok) await loadVehicles();
   }
 
   async function assignSelf(vehicleId) {
@@ -151,6 +181,16 @@ function VehiclesPage() {
           >
             {v.createdByName}
           </button>
+          {v.createdBy === user?.id && (
+            <span className="assignable-owner-actions">
+              <button type="button" onClick={() => startEdit(v)}>
+                Bearbeiten
+              </button>
+              <button type="button" onClick={() => handleDelete(v.id)}>
+                Löschen
+              </button>
+            </span>
+          )}
         </p>
 
         <ul className="assignment-list">
@@ -206,7 +246,7 @@ function VehiclesPage() {
         </Link>
 
         <section className="card">
-          <h2>Fahrt hinzufügen</h2>
+          <h2>{editingId ? 'Fahrt bearbeiten' : 'Fahrt hinzufügen'}</h2>
           {error && <p className="auth-error">{error}</p>}
           <form onSubmit={handleSubmit} className="assignable-form">
             <div className="assignable-form-row">
@@ -245,9 +285,16 @@ function VehiclesPage() {
               value={form.details}
               onChange={(e) => setForm({ ...form, details: e.target.value })}
             />
-            <button type="submit" disabled={submitting}>
-              Hinzufügen
-            </button>
+            <div className="assignable-form-actions">
+              <button type="submit" disabled={submitting}>
+                {editingId ? 'Speichern' : 'Hinzufügen'}
+              </button>
+              {editingId && (
+                <button type="button" className="assignable-form-cancel" onClick={cancelEdit}>
+                  Abbrechen
+                </button>
+              )}
+            </div>
           </form>
         </section>
 

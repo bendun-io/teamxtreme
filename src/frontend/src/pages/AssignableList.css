@@ -117,6 +117,36 @@
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.assignable-owner-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.assignable-owner-actions button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.assignable-form-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.assignable-form-cancel {
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
 }
 
 .assignable-owner-button {

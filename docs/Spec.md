@@ -67,6 +67,7 @@ The admin menu should contain cards with different features / subnavigations. Th
 - The accomodation should also have a price, set by the person adding it. From that price and the accomodation's duration, calculate a price per night, and distribute every night's price among the people assigned to the accomodation, so everyone can see their own share of the total price in the accommodation view.
 - Also add some rides in there with startingpoint and endpoint and if there are free spots in the car. In the list view of the rides, make the one offering the ride clickable and re-use the user overlay for that.
 - Only show rides that are in the future and at the bottom have a symbol to click and then also show past rides blow. Sort the future rides ascending in time.
+- The core information here, should be able to be edited by the user who entered it
 
 ### Media sharing
 

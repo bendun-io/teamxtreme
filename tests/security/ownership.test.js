@@ -51,6 +51,60 @@ test("a user cannot edit or delete another user's flight", async () => {
   assert.equal(listRes.body.flights[0].departureAirport, 'FRA');
 });
 
+test("a user cannot edit or delete another user's accommodation", async () => {
+  const { client: owner } = await seedUser('acc-own1@test.local');
+  const { client: intruder } = await seedUser('acc-intr1@test.local');
+
+  const createRes = await owner.post('/api/accommodations', {
+    location: 'Hotel Owner',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08',
+    spots: 4,
+  });
+  const accommodationId = createRes.body.accommodation.id;
+
+  const editRes = await intruder.patch(`/api/accommodations/${accommodationId}`, {
+    location: 'Hijacked',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08',
+    spots: 4,
+  });
+  assert.equal(editRes.status, 403);
+
+  const deleteRes = await intruder.delete(`/api/accommodations/${accommodationId}`);
+  assert.equal(deleteRes.status, 403);
+
+  const listRes = await owner.get('/api/accommodations');
+  assert.equal(listRes.body.accommodations[0].location, 'Hotel Owner');
+});
+
+test("a user cannot edit or delete another user's vehicle", async () => {
+  const { client: owner } = await seedUser('veh-own1@test.local');
+  const { client: intruder } = await seedUser('veh-intr1@test.local');
+
+  const createRes = await owner.post('/api/vehicles', {
+    startingPoint: 'Karlsruhe',
+    endingPoint: 'Málaga',
+    departureTime: '2026-06-01T09:00:00Z',
+    seats: 4,
+  });
+  const vehicleId = createRes.body.vehicle.id;
+
+  const editRes = await intruder.patch(`/api/vehicles/${vehicleId}`, {
+    startingPoint: 'Hijacked',
+    endingPoint: 'Málaga',
+    departureTime: '2026-06-01T09:00:00Z',
+    seats: 4,
+  });
+  assert.equal(editRes.status, 403);
+
+  const deleteRes = await intruder.delete(`/api/vehicles/${vehicleId}`);
+  assert.equal(deleteRes.status, 403);
+
+  const listRes = await owner.get('/api/vehicles');
+  assert.equal(listRes.body.vehicles[0].startingPoint, 'Karlsruhe');
+});
+
 test("a user cannot accept an accommodation assignment that isn't theirs", async () => {
   const { client: creator } = await seedUser('own2@test.local');
   const { client: target, user: targetUser } = await seedUser('own3@test.local');

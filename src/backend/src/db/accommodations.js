@@ -43,6 +43,28 @@ export async function createAccommodation(userId, { location, startDate, endDate
   return findAccommodationById(rows[0].id);
 }
 
+export async function updateAccommodation(id, { location, startDate, endDate, notes, spots, price }) {
+  const { rows } = await pool.query(
+    `UPDATE accommodations SET
+       location = $1,
+       start_date = $2,
+       end_date = $3,
+       notes = $4,
+       spots = $5,
+       price = $6
+     WHERE id = $7
+     RETURNING id`,
+    [location, startDate, endDate, notes || null, spots, price ?? null, id]
+  );
+  if (!rows[0]) return null;
+  return findAccommodationById(rows[0].id);
+}
+
+export async function deleteAccommodation(id) {
+  const { rowCount } = await pool.query('DELETE FROM accommodations WHERE id = $1', [id]);
+  return rowCount > 0;
+}
+
 export async function findAssignmentById(accommodationId, assignmentId) {
   const { rows } = await pool.query(
     'SELECT * FROM accommodation_assignments WHERE id = $1 AND accommodation_id = $2',

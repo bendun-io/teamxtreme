@@ -45,6 +45,27 @@ export async function createVehicle(userId, { seats, details, startingPoint, end
   return findVehicleById(rows[0].id);
 }
 
+export async function updateVehicle(id, { seats, details, startingPoint, endingPoint, departureTime }) {
+  const { rows } = await pool.query(
+    `UPDATE vehicles SET
+       seats = $1,
+       details = $2,
+       starting_point = $3,
+       ending_point = $4,
+       departure_time = $5
+     WHERE id = $6
+     RETURNING id`,
+    [seats, details || null, startingPoint, endingPoint, departureTime, id]
+  );
+  if (!rows[0]) return null;
+  return findVehicleById(rows[0].id);
+}
+
+export async function deleteVehicle(id) {
+  const { rowCount } = await pool.query('DELETE FROM vehicles WHERE id = $1', [id]);
+  return rowCount > 0;
+}
+
 export async function findAssignmentById(vehicleId, assignmentId) {
   const { rows } = await pool.query(
     'SELECT * FROM vehicle_assignments WHERE id = $1 AND vehicle_id = $2',

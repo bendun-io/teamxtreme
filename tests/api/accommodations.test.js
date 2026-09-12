@@ -194,3 +194,77 @@ test('assigning to a nonexistent accommodation returns 404', async () => {
   const res = await client.post(`/api/accommodations/${fakeId}/assign`, {});
   assert.equal(res.status, 404);
 });
+
+test('the creator can edit an accommodation, with the same validation as creating one', async () => {
+  const { client } = await seedUser('acc-edit1@test.local');
+  const createRes = await client.post('/api/accommodations', {
+    location: 'Hotel Before',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08',
+    spots: 4,
+    price: 700,
+  });
+  const accommodationId = createRes.body.accommodation.id;
+
+  const editRes = await client.patch(`/api/accommodations/${accommodationId}`, {
+    location: 'Hotel After',
+    startDate: '2026-06-02',
+    endDate: '2026-06-09',
+    spots: 2,
+    price: 400,
+    notes: 'Updated notes',
+  });
+  assert.equal(editRes.status, 200);
+  assert.equal(editRes.body.accommodation.location, 'Hotel After');
+  assert.equal(editRes.body.accommodation.startDate, '2026-06-02');
+  assert.equal(editRes.body.accommodation.spots, 2);
+  assert.equal(editRes.body.accommodation.price, 400);
+  assert.equal(editRes.body.accommodation.notes, 'Updated notes');
+
+  const invalidRes = await client.patch(`/api/accommodations/${accommodationId}`, {
+    location: 'Hotel After',
+    startDate: '2026-06-02',
+    endDate: '2026-06-09',
+    spots: 0,
+  });
+  assert.equal(invalidRes.status, 400);
+});
+
+test('editing a nonexistent accommodation returns 404', async () => {
+  const { client } = await seedUser('acc-edit2@test.local');
+  const fakeId = '00000000-0000-0000-0000-000000000000';
+  const res = await client.patch(`/api/accommodations/${fakeId}`, {
+    location: 'X',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08',
+    spots: 1,
+  });
+  assert.equal(res.status, 404);
+});
+
+test('the creator can delete an accommodation, which also removes its assignments', async () => {
+  const { client: creator } = await seedUser('acc-del1@test.local');
+  const { client: other, user: otherUser } = await seedUser('acc-del2@test.local');
+
+  const createRes = await creator.post('/api/accommodations', {
+    location: 'Hotel Delete',
+    startDate: '2026-06-01',
+    endDate: '2026-06-08',
+    spots: 4,
+  });
+  const accommodationId = createRes.body.accommodation.id;
+  await creator.post(`/api/accommodations/${accommodationId}/assign`, { userId: otherUser.id });
+
+  const deleteRes = await creator.delete(`/api/accommodations/${accommodationId}`);
+  assert.equal(deleteRes.status, 204);
+
+  const listRes = await other.get('/api/accommodations');
+  assert.equal(listRes.body.accommodations.length, 0);
+});
+
+test('deleting a nonexistent accommodation returns 404', async () => {
+  const { client } = await seedUser('acc-del3@test.local');
+  const fakeId = '00000000-0000-0000-0000-000000000000';
+  const res = await client.delete(`/api/accommodations/${fakeId}`);
+  assert.equal(res.status, 404);
+});

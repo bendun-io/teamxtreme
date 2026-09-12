@@ -4,6 +4,8 @@ import {
   listVehicles,
   findVehicleById,
   createVehicle,
+  updateVehicle,
+  deleteVehicle,
   findAssignmentById,
   createAssignment,
   acceptAssignment,
@@ -36,24 +38,49 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json({ vehicles: vehicles.map(publicVehicle) });
 }));
 
-router.post('/', asyncHandler(async (req, res) => {
-  const { seats, details, startingPoint, endingPoint, departureTime } = req.body || {};
+// Shared by POST and PATCH: both accept the same fields under the same
+// rules, so validation lives in one place rather than being duplicated (and
+// risking drifting apart) between create and edit.
+function parseVehicleInput(body) {
+  const { seats, details, startingPoint, endingPoint, departureTime } = body || {};
   const seatsNumber = Number(seats);
   if (!seatsNumber || seatsNumber <= 0) {
-    return res.status(400).json({ error: 'seats must be a positive number' });
+    return { error: 'seats must be a positive number' };
   }
   if (!startingPoint || !endingPoint || !departureTime) {
-    return res.status(400).json({ error: 'startingPoint, endingPoint and departureTime are required' });
+    return { error: 'startingPoint, endingPoint and departureTime are required' };
   }
 
-  const vehicle = await createVehicle(req.user.id, {
-    seats: seatsNumber,
-    details,
-    startingPoint,
-    endingPoint,
-    departureTime,
-  });
+  return { data: { seats: seatsNumber, details, startingPoint, endingPoint, departureTime } };
+}
+
+router.post('/', asyncHandler(async (req, res) => {
+  const { error, data } = parseVehicleInput(req.body);
+  if (error) return res.status(400).json({ error });
+
+  const vehicle = await createVehicle(req.user.id, data);
   res.status(201).json({ vehicle: publicVehicle(vehicle) });
+}));
+
+router.patch('/:id', asyncHandler(async (req, res) => {
+  const existing = await findVehicleById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'vehicle not found' });
+  if (existing.created_by !== req.user.id) return res.status(403).json({ error: 'not your vehicle' });
+
+  const { error, data } = parseVehicleInput(req.body);
+  if (error) return res.status(400).json({ error });
+
+  const vehicle = await updateVehicle(req.params.id, data);
+  res.json({ vehicle: publicVehicle(vehicle) });
+}));
+
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const existing = await findVehicleById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'vehicle not found' });
+  if (existing.created_by !== req.user.id) return res.status(403).json({ error: 'not your vehicle' });
+
+  await deleteVehicle(req.params.id);
+  res.status(204).end();
 }));
 
 router.post('/:id/assign', asyncHandler(async (req, res) => {
